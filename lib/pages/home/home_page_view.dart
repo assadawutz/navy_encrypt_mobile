@@ -71,9 +71,11 @@ class _HomePageView extends WidgetView<HomePage, HomePageController> {
                           MenuItem(
                             text: state._menuData[j]['text'],
                             image: state._menuData[j]['image'],
-                            onClick: () {
-                              state._menuData[j]['onClick'](context);
-                            },
+                            onClick: state._menuData[j]['onClick'] == null
+                                ? null
+                                : () {
+                                    state._menuData[j]['onClick'](context);
+                                  },
                           ),
                       ],
                     ),

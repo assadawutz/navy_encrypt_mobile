@@ -1,6 +1,7 @@
 library home_page;
 
 import 'dart:io' show Directory, File, FileSystemEntity, Platform;
+import 'dart:typed_data';
 
 import 'package:file_picker/file_picker.dart';
 
@@ -66,6 +67,8 @@ class HomePageController extends MyState<HomePage> {
 
   HomePageController(this.filePath);
 
+  static const int _maxFileSizeInBytes = 20 * 1024 * 1024;
+
   @override
   Widget build(BuildContext context) {
     return isLandscapeLayout(context)
@@ -92,49 +95,67 @@ class HomePageController extends MyState<HomePage> {
   }
 
   Future<void> _pickFile(BuildContext context) async {
-    // ขอ permission
-    final status = await Permission.storage.request();
-
-    // if (!status.isGranted) {
-    //   // แสดง Alert ถ้า user ไม่อนุญาต
-    //   await showDialog(
-    //     context: context,
-    //     builder: (ctx) => AlertDialog(
-    //       title: const Text("ต้องการสิทธิ์การเข้าถึง"),
-    //       content: const Text(
-    //         "เพื่อเลือกไฟล์ได้ ต้องอนุญาตให้แอปเข้าถึงที่เก็บข้อมูล",
-    //       ),
-    //       actions: [
-    //         TextButton(
-    //           onPressed: () => Navigator.pop(ctx),
-    //           child: const Text("ปิด"),
-    //         ),
-    //         TextButton(
-    //           onPressed: () async {
-    //             Navigator.pop(ctx);
-    //             // เปิดไปยังหน้า Settings ของแอป
-    //             await openAppSettings();
-    //           },
-    //           child: const Text("ไปตั้งค่า"),
-    //         ),
-    //       ],
-    //     ),
-    //   );
-    //   return;
-    // }
-
     try {
-      // เลือกไฟล์
-      FilePickerResult result = await FilePicker.platform.pickFiles();
-
-      if (result != null && result.files.single.path != null) {
-        debugPrint('✅ File path: ${result.files.single.path}');
-        handleIntent(result.files.single.path);
-      } else {
-        debugPrint('⚠️ No file selected');
+      final status = await Permission.storage.request();
+      if (!status.isGranted) {
+        _showSnackBar('ยกเลิกการเลือกไฟล์');
+        return;
       }
-    } catch (e) {
-      debugPrint('❌ Error picking file: $e');
+
+      final result = await FilePicker.platform.pickFiles(withData: true);
+      if (result == null) {
+        _showSnackBar('ยกเลิกการเลือกไฟล์');
+        return;
+      }
+
+      final file = result.files.single;
+      final size = file.size ?? file.bytes?.length;
+      if (size != null && size > _maxFileSizeInBytes) {
+        _showSnackBar('ไฟล์มีขนาดเกิน 20MB');
+        return;
+      }
+
+      final targetPath = file.path;
+      final targetName = targetPath ?? file.name;
+      if (targetName == null || targetName.trim().isEmpty) {
+        _showSnackBar('ไม่พบไฟล์');
+        return;
+      }
+
+      if (!_checkFileExtension(targetName)) {
+        return;
+      }
+
+      String resolvedPath = targetPath;
+      if ((resolvedPath == null || resolvedPath.trim().isEmpty) &&
+          file.bytes != null &&
+          file.bytes.isNotEmpty) {
+        try {
+          final tempFile = await FileUtil.createFileFromBytes(
+            targetName,
+            file.bytes,
+          );
+          resolvedPath = tempFile?.path;
+        } catch (error) {
+          debugPrint('❌ Failed to persist picked file: $error');
+          _showSnackBar('เกิดข้อผิดพลาด: ${error.toString()}');
+          return;
+        }
+      }
+
+      if (resolvedPath == null || resolvedPath.trim().isEmpty) {
+        _showSnackBar('ไม่พบไฟล์');
+        return;
+      }
+
+      if (!mounted) {
+        return;
+      }
+
+      handleIntent(resolvedPath, file.bytes);
+    } catch (error) {
+      debugPrint('❌ Error picking file: $error');
+      _showSnackBar('เกิดข้อผิดพลาด: ${error.toString()}');
     }
   }
 
@@ -149,21 +170,86 @@ class HomePageController extends MyState<HomePage> {
   }
 
   // called from main.dart
-  void handleIntent(String filePath) {
-    var dotIndex = filePath.lastIndexOf('.');
-    var routeToGo = (dotIndex != -1 &&
-            filePath.substring(dotIndex).toLowerCase() ==
-                '.${Navec.encryptedFileExtension}')
+  Future<void> handleIntent(String filePath, [List<int> fileBytes]) async {
+    if ((filePath == null || filePath.trim().isEmpty) &&
+        (fileBytes == null || fileBytes.isEmpty)) {
+      _showSnackBar('ไม่พบไฟล์');
+      return;
+    }
+
+    Uint8List bytes;
+    if (fileBytes != null && fileBytes.isNotEmpty) {
+      bytes = Uint8List.fromList(fileBytes);
+    }
+
+    String resolvedPath = filePath;
+    if (resolvedPath == null || resolvedPath.trim().isEmpty) {
+      if (bytes == null || bytes.isEmpty) {
+        _showSnackBar('ไม่พบไฟล์');
+        return;
+      }
+
+      try {
+        final baseName = (filePath != null && filePath.trim().isNotEmpty)
+            ? p.basename(filePath.trim())
+            : 'navy_${DateTime.now().millisecondsSinceEpoch}';
+        final tempFile = await FileUtil.createFileFromBytes(baseName, bytes);
+        resolvedPath = tempFile?.path;
+      } catch (error) {
+        _showSnackBar('เกิดข้อผิดพลาด: ${error.toString()}');
+        return;
+      }
+    }
+
+    if (resolvedPath == null || resolvedPath.trim().isEmpty) {
+      _showSnackBar('ไม่พบไฟล์');
+      return;
+    }
+
+    try {
+      final file = File(resolvedPath);
+      if (!await file.exists()) {
+        if (bytes != null && bytes.isNotEmpty) {
+          final tempFile = await FileUtil.createFileFromBytes(
+            p.basename(resolvedPath),
+            bytes,
+          );
+          resolvedPath = tempFile?.path;
+        } else {
+          _showSnackBar('ไม่พบไฟล์');
+          return;
+        }
+      }
+    } catch (error) {
+      _showSnackBar('เกิดข้อผิดพลาด: ${error.toString()}');
+      return;
+    }
+
+    if (resolvedPath == null || resolvedPath.trim().isEmpty) {
+      _showSnackBar('ไม่พบไฟล์');
+      return;
+    }
+
+    final extension = p.extension(resolvedPath).toLowerCase();
+    final routeToGo = extension == '.enc'
         ? DecryptionPage.routeName
         : EncryptionPage.routeName;
+
+    if (!mounted) {
+      return;
+    }
+
     Future.delayed(
       Duration.zero,
       () {
+        if (!mounted) {
+          return;
+        }
         Navigator.of(context).popUntil((route) => route.isFirst);
         Navigator.pushNamed(
           context,
           routeToGo,
-          arguments: filePath,
+          arguments: resolvedPath,
         );
       },
     );
@@ -176,12 +262,11 @@ class HomePageController extends MyState<HomePage> {
         'text': Platform.isWindows ? 'ไฟล์ในเครื่อง' : 'ไฟล์ในเครื่อง',
         'onClick': _pickFromFileSystem,
       },
-      if (!Platform.isWindows)
-        {
-          'image': 'assets/images/ic_camera.png',
-          'text': 'กล้อง',
-          'onClick': _pickFromCamera,
-        },
+      {
+        'image': 'assets/images/ic_camera.png',
+        'text': 'กล้อง',
+        'onClick': Platform.isWindows ? null : _pickFromCamera,
+      },
       {
         'image': 'assets/images/ic_gallery.png',
         'text': Platform.isWindows ? 'รูปภาพ' : 'คลังภาพ',
@@ -209,6 +294,15 @@ class HomePageController extends MyState<HomePage> {
         },
       },
     ];
+  }
+
+  void _showSnackBar(String message) {
+    if (!mounted || message == null || message.isEmpty) {
+      return;
+    }
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(content: Text(message)));
   }
 
   _handleClickShareButton() async {
@@ -324,41 +418,49 @@ class HomePageController extends MyState<HomePage> {
   }
 
   //
-  _openSystemPicker(BuildContext context,
+  Future<void> _openSystemPicker(BuildContext context,
       {bool pickImage = false, bool pickVideo = false}) async {
-    if (Platform.isAndroid == true) {
-      await requestStoragePermission();
-      // final permission1 = Permission.storage;
-      final permission2 = Permission.photos;
-      final permission3 = Permission.audio;
-      final permission4 = Permission.camera;
-      // if (await permission1.isDenied) {
-      //   print("---photos permission---");
-      //   await permission1.request();
-      // }
-      if (await permission2.isDenied) {
-        await permission2.request();
-      }
-      if (await permission3.isDenied) {
-        await permission3.request();
-      }
-      if (await permission4.isDenied) {
-        await permission4.request();
-      }
+    if (Platform.isWindows && pickImage) {
+      _showSnackBar('Windows ไม่รองรับกล้อง');
+      return;
     }
-    try {
-      File pickedFile;
 
+    try {
+      if (Platform.isAndroid == true) {
+        await requestStoragePermission();
+        final permissionPhotos = Permission.photos;
+        final permissionAudio = Permission.audio;
+        final permissionCamera = Permission.camera;
+        if (await permissionPhotos.isDenied) {
+          await permissionPhotos.request();
+        }
+        if (await permissionAudio.isDenied) {
+          await permissionAudio.request();
+        }
+        if (await permissionCamera.isDenied) {
+          await permissionCamera.request();
+        }
+      }
+
+      File pickedFile;
       if (pickImage) {
         final XFile image =
             await ImagePicker().pickImage(source: ImageSource.gallery);
-        if (image != null) pickedFile = File(image.path);
+        if (image == null) {
+          _showSnackBar('ยกเลิกการเลือกไฟล์');
+          return;
+        }
+        pickedFile = File(image.path);
       } else if (pickVideo) {
         final XFile video =
             await ImagePicker().pickVideo(source: ImageSource.gallery);
-        if (video != null) pickedFile = File(video.path);
+        if (video == null) {
+          _showSnackBar('ยกเลิกการเลือกไฟล์');
+          return;
+        }
+        pickedFile = File(video.path);
       } else {
-        FilePickerResult result = await FilePicker.platform.pickFiles(
+        final result = await FilePicker.platform.pickFiles(
           type: Platform.isWindows ? FileType.custom : FileType.any,
           allowedExtensions: Platform.isWindows
               ? Constants.selectableFileTypeList
@@ -367,45 +469,36 @@ class HomePageController extends MyState<HomePage> {
               : null,
         );
 
-        if (result != null && result.files.single.path != null) {
-          pickedFile = File(result.files.single.path);
+        if (result == null || result.files.single.path == null) {
+          _showSnackBar('ยกเลิกการเลือกไฟล์');
+          return;
         }
+        pickedFile = File(result.files.single.path);
       }
-      if (pickedFile != null) {
-        int size = (await pickedFile.length) as int;
 
-        if (size > 20000000.0) {
-          setState(() {
-            showOkDialog(context, 'ผิดพลาด',
-                textContent: "ขนาดไฟล์ต้องไม่เกิน 20 MB");
-          });
-        } else {
-          var filePath = pickedFile.path;
-          isLoading = true;
-
-          if (_checkFileExtension(filePath)) {
-            var routeToGo = EncryptionPage.routeName;
-            if (p.extension(filePath).substring(1) == 'enc') {
-              routeToGo = DecryptionPage.routeName;
-            }
-
-            Navigator.pushNamed(
-              context,
-              routeToGo,
-              arguments: filePath,
-            );
-          }
-
-          isLoading = false;
-        }
+      if (pickedFile == null) {
+        _showSnackBar('ไม่พบไฟล์');
+        return;
       }
-    } catch (e) {
-      print('❌ Error picking file: $e');
-      showOkDialog(context, 'เกิดข้อผิดพลาด', textContent: e.toString());
-    } finally {
-      setState(() {
-        isLoading = false;
-      });
+
+      final size = await pickedFile.length();
+      if (size > _maxFileSizeInBytes) {
+        _showSnackBar('ไฟล์มีขนาดเกิน 20MB');
+        return;
+      }
+
+      final filePath = pickedFile.path;
+      if (!_checkFileExtension(filePath)) {
+        return;
+      }
+
+      if (!mounted) {
+        return;
+      }
+
+      handleIntent(filePath);
+    } catch (error) {
+      _showSnackBar('เกิดข้อผิดพลาด: ${error.toString()}');
     }
   }
 
@@ -444,11 +537,16 @@ class HomePageController extends MyState<HomePage> {
   // }
 
   _pickFromCamera(BuildContext context) async {
-    showDialog(
-      context: context,
-      builder: (BuildContext dialogContext) {
-        return MyDialog.buildPickerDialog(
-            headerImage: Image.asset('assets/images/ic_camera.png',
+      if (Platform.isWindows) {
+        _showSnackBar('Windows ไม่รองรับกล้อง');
+        return;
+      }
+
+      showDialog(
+        context: context,
+        builder: (BuildContext dialogContext) {
+          return MyDialog.buildPickerDialog(
+              headerImage: Image.asset('assets/images/ic_camera.png',
                 width: Constants.LIST_DIALOG_HEADER_IMAGE_SIZE),
             items: [
               DialogTileData(
@@ -637,11 +735,7 @@ class HomePageController extends MyState<HomePage> {
           ),
         );
       } else {
-        showOkDialog(
-          context,
-          'ผิดพลาด',
-          textContent: 'ไม่สามารถลงทะเบียนเข้าใช้งาน Google Drive ได้',
-        );
+        _showSnackBar('ยกเลิกการเลือกไฟล์');
       }
     } catch (error, stackTrace) {
       logOneLineWithBorderDouble(
@@ -649,11 +743,7 @@ class HomePageController extends MyState<HomePage> {
       if (!mounted) {
         return;
       }
-      showOkDialog(
-        context,
-        'ผิดพลาด',
-        textContent: 'ไม่สามารถลงทะเบียนเข้าใช้งาน Google Drive ได้',
-      );
+      _showSnackBar('เกิดข้อผิดพลาด: ${error.toString()}');
     } finally {
       if (mounted) {
         isLoading = false;
@@ -684,32 +774,33 @@ class HomePageController extends MyState<HomePage> {
 
     isLoading = true;
     loadingMessage = 'กำลังลงทะเบียนเข้าใช้งาน OneDrive';
-    Future.delayed(Duration(seconds: 2), () {
-      isLoading = false;
-    });
 
     var oneDrive = OneDrive(CloudPickerMode.file);
-    var signInSuccess = Platform.isWindows
-        ? await oneDrive.signInWithOAuth2()
-        : await oneDrive.signIn();
+    try {
+      var signInSuccess = Platform.isWindows
+          ? await oneDrive.signInWithOAuth2()
+          : await oneDrive.signIn();
 
-    if (signInSuccess) {
-      Navigator.pushNamed(
-        context,
-        CloudPickerPage.routeName,
-        arguments: CloudPickerPageArg(
-          cloudDrive: oneDrive,
-          title: 'OneDrive',
-          headerImagePath: 'assets/images/ic_onedrive_new.png',
-          rootName: 'Drive',
-        ),
-      );
-    } else {
-      showOkDialog(
-        context,
-        'ผิดพลาด',
-        textContent: 'ไม่สามารถลงทะเบียนเข้าใช้งาน OneDrive ได้',
-      );
+      if (signInSuccess) {
+        Navigator.pushNamed(
+          context,
+          CloudPickerPage.routeName,
+          arguments: CloudPickerPageArg(
+            cloudDrive: oneDrive,
+            title: 'OneDrive',
+            headerImagePath: 'assets/images/ic_onedrive_new.png',
+            rootName: 'Drive',
+          ),
+        );
+      } else {
+        _showSnackBar('ยกเลิกการเลือกไฟล์');
+      }
+    } catch (error) {
+      _showSnackBar('เกิดข้อผิดพลาด: ${error.toString()}');
+    } finally {
+      if (mounted) {
+        isLoading = false;
+      }
     }
     //isLoading = false;
 
@@ -760,6 +851,15 @@ class HomePageController extends MyState<HomePage> {
 
   _pickMediaFile(
       BuildContext context, Function pickMethod, ImageSource source) async {
+    if (Platform.isWindows) {
+      _showSnackBar('Windows ไม่รองรับกล้อง');
+      return;
+    }
+
+    if (!mounted) {
+      return;
+    }
+
     setState(() {
       isLoading = true;
     });
@@ -768,48 +868,64 @@ class HomePageController extends MyState<HomePage> {
       final XFile selectedFile = await pickMethod(source: source);
 
       if (selectedFile == null) {
-        // User cancel selecting file
-        setState(() {
-          isLoading = false;
-        });
+        if (mounted) {
+          setState(() {
+            isLoading = false;
+          });
+          _showSnackBar('ยกเลิกการเลือกไฟล์');
+        }
         return;
       }
 
       final file = File(selectedFile.path);
-      final size = await file.length();
+      if (!await file.exists()) {
+        if (mounted) {
+          setState(() {
+            isLoading = false;
+          });
+        }
+        _showSnackBar('ไม่พบไฟล์');
+        return;
+      }
 
-      if (size >= 20000000) {
-        setState(() {
-          isLoading = false;
-        });
-        showOkDialog(context, 'ผิดพลาด',
-            textContent: "ขนาดไฟล์ต้องไม่เกิน 20 MB");
+      final size = await file.length();
+      if (size > _maxFileSizeInBytes) {
+        if (mounted) {
+          setState(() {
+            isLoading = false;
+          });
+        }
+        _showSnackBar('ไฟล์มีขนาดเกิน 20MB');
         return;
       }
 
       if (!_checkFileExtension(selectedFile.path)) {
-        setState(() {
-          isLoading = false;
-        });
+        if (mounted) {
+          setState(() {
+            isLoading = false;
+          });
+        }
         return;
       }
 
-      // ถ้าไฟล์ถูกต้อง
-      Future.delayed(const Duration(milliseconds: 500), () {
-        setState(() {
-          isLoading = false;
-        });
-        Navigator.pushNamed(
-          context,
-          EncryptionPage.routeName,
-          arguments: selectedFile.path,
-        );
-      });
-    } catch (e) {
-      print('❌ Error picking media file: $e');
+      final bytes = await file.readAsBytes();
+
+      if (!mounted) {
+        return;
+      }
+
       setState(() {
         isLoading = false;
       });
+
+      handleIntent(selectedFile.path, bytes);
+    } catch (error) {
+      if (mounted) {
+        setState(() {
+          isLoading = false;
+        });
+      }
+      _showSnackBar('เกิดข้อผิดพลาด: ${error.toString()}');
     }
   }
 
