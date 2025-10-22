@@ -82,9 +82,11 @@ class _HomePageViewWin extends WidgetView<HomePage, HomePageController> {
                                 MenuItem(
                                   text: item['text'],
                                   image: item['image'],
-                                  onClick: () {
-                                    item['onClick'](context);
-                                  },
+                                  onClick: item['onClick'] == null
+                                      ? null
+                                      : () {
+                                          item['onClick'](context);
+                                        },
                                   size: width > 1400 ? 110.0 : null,
                                   borderWidth: width > 1400 ? 5.0 : null,
                                 ),
@@ -105,10 +107,13 @@ class _HomePageViewWin extends WidgetView<HomePage, HomePageController> {
                                       MenuItem(
                                         text: state._menuData[j]['text'],
                                         image: state._menuData[j]['image'],
-                                        onClick: () {
-                                          state._menuData[j]
-                                              ['onClick'](context);
-                                        },
+                                        onClick:
+                                            state._menuData[j]['onClick'] == null
+                                                ? null
+                                                : () {
+                                                    state._menuData[j]
+                                                        ['onClick'](context);
+                                                  },
                                         size: width > widthThreshold ||
                                                 height > heightThreshold
                                             ? null

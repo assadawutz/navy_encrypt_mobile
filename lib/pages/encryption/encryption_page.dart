@@ -44,6 +44,7 @@ class EncryptionPage extends StatefulWidget {
 }
 
 class _EncryptionPageController extends MyState<EncryptionPage> {
+  static const int _maxFileSizeInBytes = 20 * 1024 * 1024;
   String _toBeEncryptedFilePath;
   final _watermarkEditingController = TextEditingController();
   final _passwordEditingController = TextEditingController();
@@ -70,7 +71,9 @@ class _EncryptionPageController extends MyState<EncryptionPage> {
 
     print('PATH OF FILE TO BE ENCRYPTED: $_toBeEncryptedFilePath');
 
-    return _EncryptionPageView(this);
+    return isLandscapeLayout(context)
+        ? _EncryptionPageViewWin(this)
+        : _EncryptionPageView(this);
   }
 
   _handleClickPasswordEye() {
@@ -132,6 +135,34 @@ class _EncryptionPageController extends MyState<EncryptionPage> {
       return;
     }
 
+    if (_toBeEncryptedFilePath == null ||
+        _toBeEncryptedFilePath.trim().isEmpty) {
+      _showSnackBar('ไม่พบไฟล์');
+      return;
+    }
+
+    try {
+      final originalFile = File(_toBeEncryptedFilePath);
+      if (!await originalFile.exists()) {
+        _showSnackBar('ไม่พบไฟล์');
+        return;
+      }
+
+      final originalSize = await originalFile.length();
+      if (originalSize <= 0) {
+        _showSnackBar('ไม่พบไฟล์');
+        return;
+      }
+
+      if (originalSize > _maxFileSizeInBytes) {
+        _showSnackBar('ไฟล์มีขนาดเกิน 20MB');
+        return;
+      }
+    } catch (error) {
+      _showSnackBar('เกิดข้อผิดพลาด: ${error.toString()}');
+      return;
+    }
+
     var doWatermark = false;
     var doEncrypt = false;
 
@@ -154,7 +185,7 @@ class _EncryptionPageController extends MyState<EncryptionPage> {
       try {
         signatureCode = await MyApi().getWatermarkSignatureCode(email, secret);
       } catch (e) {
-        showOkDialog(context, e.toString());
+        _showSnackBar('เกิดข้อผิดพลาด: ${e.toString()}');
       }
 
       signatureCode = _watermarkEditingController.text;
@@ -217,11 +248,13 @@ class _EncryptionPageController extends MyState<EncryptionPage> {
             algo: _algorithm,
             uuid: uuid);
       } on Exception catch (e) {
-        showOkDialog(
-          context,
-          'ผิดพลาด',
-          textContent: 'เกิดข้อผิดพลาดในการเข้ารหัส: $e',
-        );
+        _showSnackBar('เกิดข้อผิดพลาด: ${e.toString()}');
+        isLoading = false;
+        return;
+      }
+
+      if (file == null) {
+        _showSnackBar('เกิดข้อผิดพลาด: ไม่สามารถเข้ารหัสไฟล์ได้');
         isLoading = false;
         return;
       }
@@ -329,4 +362,13 @@ class _EncryptionPageController extends MyState<EncryptionPage> {
 
   String get _fileExtension =>
       p.extension(_toBeEncryptedFilePath).substring(1).toLowerCase();
+
+  void _showSnackBar(String message) {
+    if (!mounted || message == null || message.isEmpty) {
+      return;
+    }
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(content: Text(message)));
+  }
 }
