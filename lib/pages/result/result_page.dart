@@ -41,6 +41,7 @@ import 'package:printing/printing.dart';
 import 'package:share_plus/share_plus.dart';
 
 part 'result_page_view.dart';
+part 'result_page_view_win.dart';
 
 class ResultPage extends StatefulWidget {
   static const routeName = 'result';
@@ -94,7 +95,9 @@ class _ResultPageController extends MyState<ResultPage> {
 
     logOneLineWithBorderSingle('File path: $_filePath');
     logOneLineWithBorderSingle('File path: $_userID');
-    return _ResultPageView(this);
+    return isLandscapeLayout(context)
+        ? _ResultPageViewWin(this)
+        : _ResultPageView(this);
   }
 
   bool _isImageFile() {
@@ -934,4 +937,78 @@ class _ResultPageController extends MyState<ResultPage> {
             .length >
         0;
   }
+}
+
+class _ResultActionData {
+  final String label;
+  final Widget icon;
+  final VoidCallback onPressed;
+
+  const _ResultActionData({this.label, this.icon, this.onPressed});
+}
+
+List<_ResultActionData> buildResultActions(_ResultPageController state) {
+  final actions = <_ResultActionData>[
+    _ResultActionData(
+      label: 'บันทึก',
+      icon: Icon(Icons.save, size: 18.0),
+      onPressed: state._handleClickSaveButton,
+    ),
+  ];
+
+  if (state._isEncFile == true && !Platform.isWindows) {
+    actions.add(
+      _ResultActionData(
+        label: 'เปิด',
+        icon: Icon(Icons.article_outlined, size: 18.0),
+        onPressed: state._handleClickOpenButton,
+      ),
+    );
+  } else {
+    actions.add(
+      _ResultActionData(
+        label: 'อนุญาต',
+        icon: Icon(Icons.contacts, size: 18.0),
+        onPressed: state._pickEmailShare,
+      ),
+    );
+  }
+
+  if (state._isEncFile == true && Platform.isWindows) {
+    actions.add(
+      _ResultActionData(
+        label: 'เปิด',
+        icon: Icon(Icons.article_outlined, size: 18.0),
+        onPressed: state._handleClickOpenButton,
+      ),
+    );
+  } else {
+    actions.add(
+      _ResultActionData(
+        label: 'แชร์',
+        icon: Icon(Icons.share, size: 18.0),
+        onPressed: state._handleClickShareButton,
+      ),
+    );
+  }
+
+  if (state._isEncFile == true) {
+    actions.add(
+      _ResultActionData(
+        label: 'เข้ารหัส',
+        icon: Icon(Icons.enhanced_encryption_outlined, size: 18.0),
+        onPressed: state._goEncryption,
+      ),
+    );
+  }
+
+  actions.add(
+    _ResultActionData(
+      label: 'พิมพ์',
+      icon: Icon(Icons.print, size: 18.0),
+      onPressed: state._handlePrintingButton,
+    ),
+  );
+
+  return actions;
 }

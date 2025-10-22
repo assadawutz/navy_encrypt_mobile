@@ -27,6 +27,7 @@ import 'package:open_file/open_file.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 part 'settings_page_view.dart';
+part 'settings_page_view_win.dart';
 
 class SettingsPage extends StatefulWidget {
   static const routeName = 'settings';
@@ -63,7 +64,9 @@ class _SettingsPageController extends MyState<SettingsPage> {
   }
 
   @override
-  Widget build(BuildContext context) => _SettingsPageView(this);
+  Widget build(BuildContext context) => isLandscapeLayout(context)
+      ? _SettingsPageViewWin(this)
+      : _SettingsPageView(this);
 
   int getWatermarkStatusIndex(WatermarkRegisterStatus status) =>
       WatermarkRegisterStatus.values.indexWhere((item) => item == status);
