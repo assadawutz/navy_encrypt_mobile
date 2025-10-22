@@ -5,74 +5,8 @@ class _ResultPageView extends WidgetView<ResultPage, _ResultPageController> {
 
   @override
   Widget build(BuildContext context) {
-    print("state._isEncFile ${state._isEncFile}");
-    List<Map<String, dynamic>> buttonDataList = [
-      {
-        'label': 'บันทึก',
-        'icon': Icon(Icons.save, size: 18.0),
-        'onClick': state._handleClickSaveButton,
-      },
-      if (state._isEncFile == true && Platform.isWindows == false)
-        {
-          'label': 'เปิด',
-          'icon': Icon(Icons.article_outlined, size: 18.0),
-          'onClick': state._handleClickOpenButton,
-        }
-      else
-        {
-          'label': 'อนุญาต',
-          'icon': Icon(Icons.contacts, size: 18.0),
-          'onClick': state._pickEmailShare
-        },
-      if (state._isEncFile == true && Platform.isWindows == true)
-        {
-          'label': 'เปิด',
-          'icon': Icon(Icons.article_outlined, size: 18.0),
-          'onClick': state._handleClickOpenButton,
-        }
-      else
-        {
-          'label': 'แชร์',
-          'icon': Icon(Icons.share, size: 18.0),
-          'onClick': state._handleClickShareButton,
-        },
-      if (state._isEncFile == true)
-        {
-          'label': 'เข้ารหัส',
-          'icon': Icon(Icons.enhanced_encryption_outlined, size: 18.0),
-          'onClick': state._goEncryption,
-        },
-      {
-        'label': 'พิมพ์',
-        'icon': Icon(Icons.print, size: 18.0),
-        'onClick': state._handlePrintingButton,
-      },
-
-      //   {
-      //     'label': 'เปิด',
-      //     'icon': Icon(Icons.article_outlined, size: 18.0),
-      //     'onClick': state._handleClickOpenButton,
-      //   },
-      // // if (state._isEncFile)
-      // {
-      //   'label': 'บันทึก',
-      //   'icon': Icon(Icons.save, size: 18.0),
-      //   'onClick': state._handleClickSaveButton,
-      // },
-      // if (state._type == 'encryption')
-      //   {
-      //     'label': 'อนุญาต',
-      //     'icon': Icon(Icons.contacts, size: 18.0),
-      //     'onClick': state._pickEmailShare
-      //   },
-      // if (Platform.isWindows == true)
-      //   {
-      //     'label': 'เปิด',
-      //     'icon': Icon(Icons.article_outlined, size: 18.0),
-      //     'onClick': state._handleClickOpenButton,
-      //   },
-      //
-    ];
+    final actions = buildResultActions(state);
+    final isWideLayout = screenWidth(context) >= 480.0;
 
     return HeaderScaffold(
         showBackButton: true,
@@ -103,29 +37,90 @@ class _ResultPageView extends WidgetView<ResultPage, _ResultPageController> {
                 Text(
                   state._message,
                   style: TextStyle(fontSize: 22.0, fontWeight: FontWeight.w500),
+                  textAlign: TextAlign.center,
                 ),
                 SizedBox(height: !Platform.isWindows ? 16.0 : 8.0),
                 if (state._filePath != null)
                   FileDetails(filePath: state._filePath),
                 SizedBox(height: !Platform.isWindows ? 32.0 : 16.0),
-                Column(
-                  children: buttonDataList
-                      .map((item) => Column(
-                            children: [
-                              MyButton(
-                                label: item['label'],
-                                rightIcon: item['icon'],
-                                width: 180.0,
-                                onClick: item['onClick'],
-                              ),
-                              SizedBox(height: 16.0),
-                            ],
-                          ))
-                      .toList(),
+                _ResultActionButtonList(
+                  actions: actions,
+                  useWrapLayout: isWideLayout,
+                  buttonWidth: 200.0,
                 ),
               ],
             ),
           ),
         ));
+  }
+}
+
+class _ResultActionButtonList extends StatelessWidget {
+  final List<_ResultActionData> actions;
+  final bool useWrapLayout;
+  final double buttonWidth;
+
+  const _ResultActionButtonList({
+    Key key,
+    @required this.actions,
+    this.useWrapLayout = false,
+    this.buttonWidth = 220.0,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    if (actions == null || actions.isEmpty) {
+      return SizedBox.shrink();
+    }
+
+    final buttons = actions
+        .map(
+          (action) => SizedBox(
+            width: buttonWidth,
+            child: _ResultActionButton(action: action),
+          ),
+        )
+        .toList();
+
+    if (useWrapLayout) {
+      return Align(
+        alignment: Alignment.center,
+        child: Wrap(
+          alignment: WrapAlignment.center,
+          spacing: 24.0,
+          runSpacing: 16.0,
+          children: buttons,
+        ),
+      );
+    }
+
+    return Column(
+      children: [
+        for (var i = 0; i < buttons.length; i++)
+          Padding(
+            padding: EdgeInsets.only(bottom: i == buttons.length - 1 ? 0.0 : 16.0),
+            child: Align(
+              alignment: Alignment.center,
+              child: buttons[i],
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+class _ResultActionButton extends StatelessWidget {
+  final _ResultActionData action;
+
+  const _ResultActionButton({Key key, @required this.action}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return MyButton(
+      label: action.label,
+      rightIcon: action.icon,
+      width: double.infinity,
+      onClick: action.onPressed,
+    );
   }
 }
