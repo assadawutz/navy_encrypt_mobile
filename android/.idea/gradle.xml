@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="GradleMigrationSettings" migrationVersion="1" />
+  <component name="GradleSettings">
+    <option name="linkedExternalProjectsSettings">
+      <GradleProjectSettings>
+        <option name="externalProjectPath" value="$PROJECT_DIR$" />
+        <option name="gradleJvm" value="#JAVA_HOME" />
+        <option name="modules">
+          <set>
+            <option value="$USER_HOME$/.pub-cache/hosted/pub.dartlang.org/device_info_plus-8.2.2/android" />
+            <option value="$USER_HOME$/.pub-cache/hosted/pub.dartlang.org/file_picker-5.2.10/android" />
+            <option value="$USER_HOME$/.pub-cache/hosted/pub.dartlang.org/flutter_plugin_android_lifecycle-2.0.15/android" />
+            <option value="$USER_HOME$/.pub-cache/hosted/pub.dartlang.org/flutter_secure_storage-5.1.2/android" />
+            <option value="$USER_HOME$/.pub-cache/hosted/pub.dartlang.org/flutter_web_auth-0.4.3/android" />
+            <option value="$USER_HOME$/.pub-cache/hosted/pub.dartlang.org/google_sign_in_android-6.1.18/android" />
+            <option value="$USER_HOME$/.pub-cache/hosted/pub.dartlang.org/image_gallery_saver_plus-3.0.3/android" />
+            <option value="$USER_HOME$/.pub-cache/hosted/pub.dartlang.org/image_picker_android-0.8.7+4/android" />
+            <option value="$USER_HOME$/.pub-cache/hosted/pub.dartlang.org/open_file-3.3.2/android" />
+            <option value="$USER_HOME$/.pub-cache/hosted/pub.dartlang.org/path_provider_android-2.1.0/android" />
+            <option value="$USER_HOME$/.pub-cache/hosted/pub.dartlang.org/permission_handler_android-10.3.6/android" />
+            <option value="$USER_HOME$/.pub-cache/hosted/pub.dartlang.org/printing-5.9.3/android" />
+            <option value="$USER_HOME$/.pub-cache/hosted/pub.dartlang.org/receive_sharing_intent-1.6.8/android" />
+            <option value="$USER_HOME$/.pub-cache/hosted/pub.dartlang.org/share_plus-6.3.4/android" />
+            <option value="$USER_HOME$/.pub-cache/hosted/pub.dartlang.org/shared_preferences_android-2.2.0/android" />
+            <option value="$USER_HOME$/.pub-cache/hosted/pub.dartlang.org/sqflite-2.2.8+4/android" />
+            <option value="$USER_HOME$/.pub-cache/hosted/pub.dartlang.org/url_launcher_android-6.0.38/android" />
+            <option value="$PROJECT_DIR$" />
+            <option value="$PROJECT_DIR$/app" />
+          </set>
+        </option>
+        <option name="resolveExternalAnnotations" value="false" />
+      </GradleProjectSettings>
+    </option>
+    <option name="parallelModelFetch" value="true" />
+  </component>
+</project>
