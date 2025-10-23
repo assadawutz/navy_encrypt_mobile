@@ -4,17 +4,21 @@
   <component name="GradleSettings">
     <option name="linkedExternalProjectsSettings">
       <GradleProjectSettings>
+        <option name="testRunner" value="CHOOSE_PER_TEST" />
         <option name="externalProjectPath" value="$PROJECT_DIR$" />
         <option name="gradleJvm" value="#JAVA_HOME" />
         <option name="modules">
           <set>
             <option value="$USER_HOME$/.pub-cache/hosted/pub.dartlang.org/device_info_plus-8.2.2/android" />
+            <option value="$USER_HOME$/.pub-cache/hosted/pub.dartlang.org/disk_space-0.2.1/android" />
             <option value="$USER_HOME$/.pub-cache/hosted/pub.dartlang.org/file_picker-5.2.10/android" />
+            <option value="$USER_HOME$/.pub-cache/hosted/pub.dartlang.org/firebase_auth-3.4.0/android" />
+            <option value="$USER_HOME$/.pub-cache/hosted/pub.dartlang.org/firebase_core-1.19.0/android" />
             <option value="$USER_HOME$/.pub-cache/hosted/pub.dartlang.org/flutter_plugin_android_lifecycle-2.0.15/android" />
             <option value="$USER_HOME$/.pub-cache/hosted/pub.dartlang.org/flutter_secure_storage-5.1.2/android" />
             <option value="$USER_HOME$/.pub-cache/hosted/pub.dartlang.org/flutter_web_auth-0.4.3/android" />
             <option value="$USER_HOME$/.pub-cache/hosted/pub.dartlang.org/google_sign_in_android-6.1.18/android" />
-            <option value="$USER_HOME$/.pub-cache/hosted/pub.dartlang.org/image_gallery_saver_plus-3.0.3/android" />
+            <option value="$USER_HOME$/.pub-cache/hosted/pub.dartlang.org/image_gallery_saver-1.7.1/android" />
             <option value="$USER_HOME$/.pub-cache/hosted/pub.dartlang.org/image_picker_android-0.8.7+4/android" />
             <option value="$USER_HOME$/.pub-cache/hosted/pub.dartlang.org/open_file-3.3.2/android" />
             <option value="$USER_HOME$/.pub-cache/hosted/pub.dartlang.org/path_provider_android-2.1.0/android" />
@@ -29,9 +33,7 @@
             <option value="$PROJECT_DIR$/app" />
           </set>
         </option>
-        <option name="resolveExternalAnnotations" value="false" />
       </GradleProjectSettings>
     </option>
-    <option name="parallelModelFetch" value="true" />
   </component>
 </project>

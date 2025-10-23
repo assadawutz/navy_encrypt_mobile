@@ -11,6 +11,11 @@
                   <option name="appId" value="com.app.sipamobile2013" />
                 </ConnectionSetting>
               </option>
+              <option name="failureTypes">
+                <list>
+                  <option value="FATAL" />
+                </list>
+              </option>
               <option name="signal" value="SIGNAL_UNSPECIFIED" />
               <option name="timeIntervalDays" value="SEVEN_DAYS" />
               <option name="visibilityType" value="ALL" />
@@ -23,9 +28,9 @@
               <option name="connection">
                 <ConnectionSetting>
                   <option name="appId" value="th.mi.navy.navy_encrypt" />
-                  <option name="mobileSdkAppId" value="1:786699358980:android:44491fa209467d7cbf7651" />
-                  <option name="projectId" value="tv-live-5-force" />
-                  <option name="projectNumber" value="786699358980" />
+                  <option name="mobileSdkAppId" value="1:406078252099:android:d42fdf5fb93dd5e62ba0f6" />
+                  <option name="projectId" value="eminent-cycle-87602" />
+                  <option name="projectNumber" value="406078252099" />
                 </ConnectionSetting>
               </option>
               <option name="signal" value="SIGNAL_UNSPECIFIED" />

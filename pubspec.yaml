@@ -3,7 +3,7 @@ description: A new Flutter application.
 
 version: 4.1.1+4
 environment:
-  sdk: ">=2.10.0 <3.0.0"  # Flutter 3.3.8 ใช้ Dart 2.18.x
+  sdk: ">=2.10.0 <3.0.0"
 
 dependencies:
   flutter:

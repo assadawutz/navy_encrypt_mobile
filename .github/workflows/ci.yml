@@ -26,15 +26,20 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
+
+
       - name: Run unit tests
         run: flutter test --no-pub
 
       - name: Build Android release APK
         run: flutter build apk --release
-    
-      - name: Install dependencies
-        run: flutter pub get
 
+#      - name: Build IPA release APK
+#        run: flutter build ipa --debug
+#
+#
+#      - name: Build IOS release APK
+#        run: flutter build ios --release
       - name: Install CocoaPods dependencies
         run: |
           cd ios
@@ -79,4 +84,3 @@ jobs:
           DOWNLOAD_URL: ${{ steps.publish-release.outputs.download_url }}
         run: |
           echo "The iOS IPA is available at: $DOWNLOAD_URL"
-
