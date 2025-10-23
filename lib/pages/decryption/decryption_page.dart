@@ -89,9 +89,9 @@ class _DecryptionPageController extends MyState<DecryptionPage> {
   }
 
   Future<void> _handleClickGoButton() async {
-    var password = _passwordEditingController.text;
-    if (password.trim().isEmpty) {
-      showOkDialog(context, 'ต้องกรอกรหัสผ่าน');
+    final password = _passwordEditingController.text.trim();
+    if (password.isEmpty) {
+      _showSnackBar('ต้องกรอกรหัสผ่าน');
       return;
     }
 
@@ -133,110 +133,128 @@ class _DecryptionPageController extends MyState<DecryptionPage> {
     List decryptData;
     File outFile;
     String uuid;
-    var email = await MyPrefs.getEmail();
-    var secret = await MyPrefs.getSecret();
+    final email = await MyPrefs.getEmail();
+    final secret = await MyPrefs.getSecret();
+
     try {
       decryptData = await Navec.decryptFile(
         context: context,
         filePath: _toBeDecryptedFilePath,
         password: password,
       );
-      print("decrypt = ${decryptData[0]}");
-      print("decrypt = ${decryptData[1]}");
-      // var uuid = Uuid();
-
       outFile = decryptData[0];
       uuid = decryptData[1];
-      // var uid = Uuid();
-      // uuid = uid.v4();
-    } on Exception catch (e) {
-      _showSnackBar('เกิดข้อผิดพลาด: ${e.toString()}');
+    } catch (error) {
+      _showSnackBar('เกิดข้อผิดพลาด: ${error.toString()}');
+      isLoading = false;
+      return;
     }
-    String getLog;
 
-    if (outFile != null && uuid != null) {
-      try {
-        final statusCheckDecrypt = await MyApi().getCheckDecrypt(email, uuid);
-        if (!statusCheckDecrypt) {
+    if (outFile == null || uuid == null) {
+      isLoading = false;
+      _showSnackBar('เกิดข้อผิดพลาด: ไม่สามารถถอดรหัสไฟล์ได้');
+      return;
+    }
+
+    try {
+      final statusCheckDecrypt = await MyApi().getCheckDecrypt(email, uuid);
+      if (!statusCheckDecrypt) {
+        if (mounted) {
           showDialog(
-              context: context,
-              builder: (context) {
-                return StatefulBuilder(builder: (context, setState) {
-                  return MyDialog(
-                    headerImage: Image.asset(
-                        'assets/images/ic_unauthorized.png',
-                        width: Constants.LIST_DIALOG_HEADER_IMAGE_SIZE),
-                    body: Padding(
-                        padding: const EdgeInsets.all(0),
-                        child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: [
-                              SizedBox(height: 32.0),
-                              Text(
-                                'คุณไม่มีสิทธิ์ในการเข้าถึงไฟล์นี้!',
-                                textAlign: TextAlign.center,
+            context: context,
+            builder: (context) {
+              return StatefulBuilder(builder: (context, setState) {
+                return MyDialog(
+                  headerImage: Image.asset(
+                      'assets/images/ic_unauthorized.png',
+                      width: Constants.LIST_DIALOG_HEADER_IMAGE_SIZE),
+                  body: Padding(
+                    padding: const EdgeInsets.all(0),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        SizedBox(height: 32.0),
+                        Text(
+                          'คุณไม่มีสิทธิ์ในการเข้าถึงไฟล์นี้!',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: 22.0,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        SizedBox(height: 22.0),
+                        OverflowBar(
+                          alignment: MainAxisAlignment.end,
+                          overflowAlignment: OverflowBarAlignment.end,
+                          overflowDirection: VerticalDirection.down,
+                          overflowSpacing: 0,
+                          children: <Widget>[
+                            TextButton(
+                              child: Text(
+                                "ตกลง",
                                 style: TextStyle(
-                                    fontSize: 22.0,
-                                    fontWeight: FontWeight.w500),
+                                  color: Color.fromARGB(255, 31, 150, 205),
+                                ),
                               ),
-                              SizedBox(height: 22.0),
-                              OverflowBar(
-                                alignment: MainAxisAlignment.end,
-                                // spacing: spacing,
-                                overflowAlignment: OverflowBarAlignment.end,
-                                overflowDirection: VerticalDirection.down,
-                                overflowSpacing: 0,
-                                children: <Widget>[
-                                  TextButton(
-                                    child: Text("ตกลง",
-                                        style: TextStyle(
-                                            color: Color.fromARGB(
-                                                255, 31, 150, 205))),
-                                    onPressed: () {
-                                      Navigator.pop(context, false);
-                                    },
-                                  ),
-                                ],
-                              )
-                            ])),
-                  );
-                });
+                              onPressed: () {
+                                Navigator.pop(context, false);
+                              },
+                            ),
+                          ],
+                        )
+                      ],
+                    ),
+                  ),
+                );
               });
-
-          isLoading = false;
-          return;
-        }
-      } on Exception catch (e) {
-        showOkDialog(context, 'เกิดข้อผิดพลาดในการตรวจสอบสิทธิ์!');
-      }
-      String getLog;
-
-      try {
-        String fileName = '${p.basename(_toBeDecryptedFilePath)}';
-        int logId = await MyApi().saveLog(
-            email, fileName, uuid, null, 'view', "decryption", secret, null);
-        getLog = logId.toString();
-        if (logId == null) {
-          showOkDialog(
-            context,
-            'ผิดพลาด',
-            textContent: 'ไม่สามารถดำเนินการ\nหรือบัญชีของท่านรอการตรวจสอบ!',
+            },
           );
-          isLoading = false;
-          return;
         }
-      } catch (e) {
-        showOkDialog(context, e.toString());
+
         isLoading = false;
         return;
       }
+    } catch (error) {
+      isLoading = false;
+      showOkDialog(context, 'เกิดข้อผิดพลาดในการตรวจสอบสิทธิ์!');
+      return;
+    }
+
+    final decryptedExtension = p.extension(outFile.path);
+    final targetPath = p.join(
+      p.dirname(outFile.path),
+      'file_decrypted_${DateTime.now().millisecondsSinceEpoch}${decryptedExtension}',
+    );
+
+    try {
+      outFile = await outFile.rename(targetPath);
+    } catch (error) {
+      _showSnackBar('เกิดข้อผิดพลาด: ${error.toString()}');
+      isLoading = false;
+      return;
+    }
+
+    String getLog;
+    try {
+      final fileName = p.basename(_toBeDecryptedFilePath);
+      final logId = await MyApi()
+          .saveLog(email, fileName, uuid, null, 'view', "decryption", secret, null);
+      if (logId == null) {
+        _showSnackBar('ไม่สามารถบันทึกข้อมูลได้');
+        isLoading = false;
+        return;
+      }
+      getLog = logId.toString();
+    } catch (error) {
+      _showSnackBar('เกิดข้อผิดพลาด: ${error.toString()}');
+      isLoading = false;
+      return;
     }
 
     isLoading = false;
 
-    if (outFile == null) {
-      _showSnackBar('เกิดข้อผิดพลาด: ไม่สามารถถอดรหัสไฟล์ได้');
+    if (!mounted) {
       return;
     }
 
@@ -248,7 +266,7 @@ class _DecryptionPageController extends MyState<DecryptionPage> {
         'message': 'ถอดรหัสสำเร็จ',
         'isEncryption': false,
         'userID': getLog,
-        'fileEncryptPath': _toBeDecryptedFilePath,
+        'fileEncryptPath': outFile.path,
         'signatureCode': null,
         'type': 'decryption'
       },

@@ -1010,34 +1010,41 @@ class _ResultPageController extends MyState<ResultPage> {
   }
 
   Future<File> _resolveResultFile() async {
-    if (_filePath == null || _filePath.isEmpty) {
+    final candidates = <String>[_fileEncryptPath, _filePath]
+        .where((path) => path != null && path.isNotEmpty)
+        .toList();
+
+    if (candidates.isEmpty) {
       _showSnackBar('ไม่พบไฟล์');
       return null;
     }
 
-    try {
-      final file = File(_filePath);
-      if (!await file.exists()) {
-        _showSnackBar('ไม่พบไฟล์');
+    for (final path in candidates) {
+      try {
+        final file = File(path);
+        if (!await file.exists()) {
+          continue;
+        }
+
+        final size = await file.length();
+        if (size <= 0) {
+          continue;
+        }
+
+        if (size > _maxFileSizeInBytes) {
+          _showSnackBar('ไฟล์มีขนาดเกิน 20MB');
+          return null;
+        }
+
+        return file;
+      } catch (error) {
+        _showSnackBar('เกิดข้อผิดพลาด: ${error.toString()}');
         return null;
       }
-
-      final size = await file.length();
-      if (size <= 0) {
-        _showSnackBar('ไม่พบไฟล์');
-        return null;
-      }
-
-      if (size > _maxFileSizeInBytes) {
-        _showSnackBar('ไฟล์มีขนาดเกิน 20MB');
-        return null;
-      }
-
-      return file;
-    } catch (error) {
-      _showSnackBar('เกิดข้อผิดพลาด: ${error.toString()}');
-      return null;
     }
+
+    _showSnackBar('ไม่พบไฟล์');
+    return null;
   }
 
   void _showSnackBar(String message) {
