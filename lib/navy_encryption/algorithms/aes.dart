@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:encrypt/encrypt.dart' as enc;
@@ -32,11 +33,23 @@ class Aes extends BaseAlgorithm {
   }
 
   enc.Encrypter _createEncrypter(String password) {
-    String textKey = password.trim();
-    while (textKey.length < keyLengthInBytes) {
-      textKey = '$textKey${Navec.passwordPadChar}';
+    if (keyLengthInBytes == null || keyLengthInBytes <= 0) {
+      throw StateError('Invalid AES key length: $keyLengthInBytes');
     }
-    final key = enc.Key.fromUtf8(textKey);
+
+    final trimmedPassword = (password ?? '').trim();
+    final padByte = Navec.passwordPadChar.codeUnitAt(0);
+    final passwordBytes = utf8.encode(trimmedPassword);
+
+    List<int> keyBytes;
+    if (passwordBytes.length >= keyLengthInBytes) {
+      keyBytes = passwordBytes.sublist(0, keyLengthInBytes);
+    } else {
+      keyBytes = List<int>.from(passwordBytes)
+        ..addAll(List<int>.filled(keyLengthInBytes - passwordBytes.length, padByte));
+    }
+
+    final key = enc.Key(Uint8List.fromList(keyBytes));
     return enc.Encrypter(enc.AES(key));
   }
 }
