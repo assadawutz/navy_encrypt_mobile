@@ -93,6 +93,7 @@ KEYPROPS
       IOS_KEYCHAIN_PASSWORD: ${{ secrets.IOS_KEYCHAIN_PASSWORD }}
       EXPORT_OPTIONS: ios/export_options_enterprise.plist
       KEYCHAIN_PATH: ${{ runner.temp }}/build.keychain-db
+      FLUTTER_BUILD_NAME: ${{ github.ref_name }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -163,9 +164,11 @@ KEYPROPS
           UUID=$(/usr/libexec/PlistBuddy -c "Print UUID" "${PROFILE_PATH}")
           cp "${PROFILE_PATH}" "${HOME}/Library/MobileDevice/Provisioning Profiles/${UUID}.mobileprovision"
 
+      - name: Set Flutter build name from dispatch input
+        if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.release_tag != '' }}
+        run: echo "FLUTTER_BUILD_NAME=${{ github.event.inputs.release_tag }}" >> "${GITHUB_ENV}"
+
       - name: Build enterprise IPA
-        env:
-          FLUTTER_BUILD_NAME: ${{ github.event.inputs.release_tag || github.ref_name }}
         run: flutter build ipa --release --no-pub --export-options-plist "${EXPORT_OPTIONS}"
 
       - name: Upload iOS artifact
