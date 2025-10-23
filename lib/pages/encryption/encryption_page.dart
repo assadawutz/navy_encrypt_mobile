@@ -294,6 +294,10 @@ class _EncryptionPageController extends MyState<EncryptionPage> {
     var message = doWatermark ? 'ใส่ลายน้ำ' : '';
     message =
         '$message${doEncrypt ? ((message == '' ? '' : 'และ') + 'เข้ารหัส') : ''}';
+    if (!mounted) {
+      return;
+    }
+
     Navigator.pushReplacementNamed(
       context,
       ResultPage.routeName,

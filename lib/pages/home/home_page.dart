@@ -355,18 +355,6 @@ class HomePageController extends MyState<HomePage> {
                 Navigator.of(context).pop();
 
                 await _openSystemPicker(context);
-                Navigator.pushNamed(
-                  context,
-                  CloudPickerPage.routeName,
-                  arguments: CloudPickerPageArg(
-                      cloudDrive: LocalDrive(
-                        CloudPickerMode.file,
-                        '/storage/emulated/0/Download',
-                      ),
-                      title: 'โฟลเดอร์อื่นๆ',
-                      headerImagePath: 'assets/images/ic_document.png',
-                      rootName: 'App\'s Folder'),
-                );
                 // await FileHelper.pickAnyFile(context); // ถ้าต้องออกนอก temp dir
               },
             ),
