@@ -41,6 +41,7 @@ import 'package:printing/printing.dart';
 import 'package:share_plus/share_plus.dart';
 
 part 'result_page_view.dart';
+part 'result_page_view_win.dart';
 
 class ResultPage extends StatefulWidget {
   static const routeName = 'result';
@@ -52,6 +53,7 @@ class ResultPage extends StatefulWidget {
 }
 
 class _ResultPageController extends MyState<ResultPage> {
+  static const int _maxFileSizeInBytes = 20 * 1024 * 1024;
   String _filePath;
   String _message;
   bool _isEncFile;
@@ -84,7 +86,9 @@ class _ResultPageController extends MyState<ResultPage> {
     // _fileEncryptPath =
     //     arguments['fileEncryptPath'] ?? arguments['filePath'] as String;
 
-    _fileEncryptPath = arguments['filePath'] as String;
+    final encryptPathArg = arguments['fileEncryptPath'] as String;
+    _fileEncryptPath =
+        (encryptPathArg != null && encryptPathArg.isNotEmpty) ? encryptPathArg : _filePath;
 
     assert(_filePath != null && _filePath.isNotEmpty);
 
@@ -94,7 +98,9 @@ class _ResultPageController extends MyState<ResultPage> {
 
     logOneLineWithBorderSingle('File path: $_filePath');
     logOneLineWithBorderSingle('File path: $_userID');
-    return _ResultPageView(this);
+    return isLandscapeLayout(context)
+        ? _ResultPageViewWin(this)
+        : _ResultPageView(this);
   }
 
   bool _isImageFile() {
@@ -131,6 +137,10 @@ class _ResultPageController extends MyState<ResultPage> {
   }
 
   _handleClickSaveButton() async {
+    if (await _resolveResultFile() == null) {
+      return;
+    }
+
     showDialog(
       context: context,
       builder: (BuildContext dialogContext) {
@@ -246,6 +256,11 @@ class _ResultPageController extends MyState<ResultPage> {
   }
 
   _saveToGallery() async {
+    final file = await _resolveResultFile();
+    if (file == null) {
+      return;
+    }
+
     // Windows
     if (Platform.isWindows) {
       var localDrive = LocalDrive(
@@ -256,7 +271,7 @@ class _ResultPageController extends MyState<ResultPage> {
         context,
         CloudPickerPage.routeName,
         arguments: CloudPickerPageArg(
-          cloudDrive: localDrive..fileToUpload = File(_filePath),
+          cloudDrive: localDrive..fileToUpload = file,
           title: 'รูปภาพ',
           headerImagePath: 'assets/images/ic_gallery.png',
           rootName: 'Pictures',
@@ -269,34 +284,33 @@ class _ResultPageController extends MyState<ResultPage> {
     else {
       var status = await Permission.storage.status;
       if (status.isGranted) {
-        await _doSaveToGallery();
+        await _doSaveToGallery(file);
       } else {
         status = await Permission.storage.request();
         if (status.isGranted) {
-          await _doSaveToGallery();
+          await _doSaveToGallery(file);
         } else {
-          showOkDialog(
-            context,
-            'ผิดพลาด',
-            textContent: 'แอปไม่ได้รับอนุญาตให้บันทึกไฟล์',
-          );
+          _showSnackBar('แอปไม่ได้รับอนุญาตให้บันทึกไฟล์');
         }
       }
     }
   }
 
-  _doSaveToGallery() async {
-    var file = File(_filePath);
-    var result = await ImageGallerySaverPlus.saveImage(
+  _doSaveToGallery(File file) async {
+    try {
+      var result = await ImageGallerySaverPlus.saveImage(
       await file.readAsBytes(),
       quality: 100,
     );
-    showOkDialog(
-      context,
-      result['isSuccess']
-          ? 'บันทึกลงในคลังภาพสำเร็จ'
-          : 'เกิดข้อผิดพลาดในการบันทึกลงในคลังภาพ',
-    );
+      showOkDialog(
+        context,
+        result['isSuccess']
+            ? 'บันทึกลงในคลังภาพสำเร็จ'
+            : 'เกิดข้อผิดพลาดในการบันทึกลงในคลังภาพ',
+      );
+    } catch (error) {
+      _showSnackBar('เกิดข้อผิดพลาด: ${error.toString()}');
+    }
   }
 
   // _saveToDocFolder() async {
@@ -330,6 +344,11 @@ class _ResultPageController extends MyState<ResultPage> {
   // }
 
   _saveToDocFolder() async {
+    final file = await _resolveResultFile();
+    if (file == null) {
+      return;
+    }
+
     var localDrive = LocalDrive(
       CloudPickerMode.folder,
       (await FileUtil.getDocDir()).path,
@@ -338,7 +357,7 @@ class _ResultPageController extends MyState<ResultPage> {
       context,
       CloudPickerPage.routeName,
       arguments: CloudPickerPageArg(
-          cloudDrive: localDrive..fileToUpload = File(_filePath),
+          cloudDrive: localDrive..fileToUpload = file,
           title: 'โฟลเดอรs์ของแอป',
           headerImagePath: 'assets/images/ic_document.png',
           rootName: 'App\'s Folder'),
@@ -347,6 +366,11 @@ class _ResultPageController extends MyState<ResultPage> {
   }
 
   _saveToICloud() async {
+    final file = await _resolveResultFile();
+    if (file == null) {
+      return;
+    }
+
     var localDrive = ICloudDrive(
       CloudPickerMode.folder,
       '',
@@ -355,7 +379,7 @@ class _ResultPageController extends MyState<ResultPage> {
       context,
       CloudPickerPage.routeName,
       arguments: CloudPickerPageArg(
-          cloudDrive: localDrive..fileToUpload = File(_filePath),
+          cloudDrive: localDrive..fileToUpload = file,
           title: 'iCloud',
           headerImagePath: 'assets/images/ic_icloud.png',
           rootName: 'iCloud'),
@@ -364,6 +388,11 @@ class _ResultPageController extends MyState<ResultPage> {
   }
 
   Future<void> _saveToLocalStorage() async {
+    final file = await _resolveResultFile();
+    if (file == null) {
+      return;
+    }
+
     //isLoading = true;
     //loadingMessage = 'กำลังแสดงไดอะล็อกสำหรับเลือกโฟลเดอร์ที่จะบันทึกไฟล์';
 
@@ -374,13 +403,15 @@ class _ResultPageController extends MyState<ResultPage> {
         // Save-file / save-as dialog - ใช้ได้เฉพาะ desktop
         String outputFilePath = await FilePicker.platform.saveFile(
           dialogTitle: 'เลือกโฟลเดอร์และชื่อไฟล์ที่จะบันทึก',
-          fileName: p.basename(_filePath),
+          fileName: p.basename(file.path),
           //type: FileType.image,
         );
         if (outputFilePath == null) {
           // User canceled the picker
+          _showSnackBar('ยกเลิกการเลือกไฟล์');
         } else {
-          await _saveFile(outputFilePath, isFullPath: true);
+          await _saveFile(outputFilePath,
+              sourceFile: file, isFullPath: true);
         }
       } else {
         // Pick a directory
@@ -388,22 +419,19 @@ class _ResultPageController extends MyState<ResultPage> {
         if (selectedDirectory == null) {
           // User canceled the picker
           //isLoading = false;
+          _showSnackBar('ยกเลิกการเลือกไฟล์');
         } else {
           logOneLineWithBorderDouble('SELECTED DIR: $selectedDirectory');
 
           var status = await Permission.storage.status;
           if (status.isGranted) {
-            await _saveFile(selectedDirectory);
+            await _saveFile(selectedDirectory, sourceFile: file);
           } else {
             status = await Permission.storage.request();
             if (status.isGranted) {
-              await _saveFile(selectedDirectory);
+              await _saveFile(selectedDirectory, sourceFile: file);
             } else {
-              showOkDialog(
-                context,
-                'ผิดพลาด',
-                textContent: 'แอปไม่ได้รับอนุญาตให้บันทึกไฟล์',
-              );
+              _showSnackBar('แอปไม่ได้รับอนุญาตให้บันทึกไฟล์');
             }
           }
           //isLoading = false;
@@ -412,46 +440,61 @@ class _ResultPageController extends MyState<ResultPage> {
     });
   }
 
-  Future<void> _saveFile(String selectedPath, {bool isFullPath = false}) async {
-    var targetPath =
-        isFullPath ? selectedPath : p.join(selectedPath, p.basename(_filePath));
+  Future<void> _saveFile(String selectedPath,
+      {File sourceFile, bool isFullPath = false}) async {
+    final file = sourceFile ?? await _resolveResultFile();
+    if (file == null) {
+      return;
+    }
+
+    final targetPath =
+        isFullPath ? selectedPath : p.join(selectedPath, p.basename(file.path));
     logOneLineWithBorderSingle('COPYING TO $targetPath');
-    print('COPYING TO ${p.basename(_filePath)}');
     try {
       isLoading = true;
       loadingMessage = 'กำลังบันทึกไฟล์';
 
-      await File(_filePath).copy(targetPath);
+      await file.copy(targetPath);
       showOkDialog(
         context,
         'สำเร็จ',
         textContent: 'บันทึกไฟล์สำเร็จ',
       );
     } catch (e) {
-      showOkDialog(
-        context,
-        'ผิดพลาด',
-        textContent: 'เกิดข้อผิดพลาดในการบันทึกไฟล์\n$e',
-      );
+      _showSnackBar('เกิดข้อผิดพลาด: ${e.toString()}');
     } finally {
       isLoading = false;
     }
   }
 
   _saveToGoogleDrive() async {
+    final file = await _resolveResultFile();
+    if (file == null) {
+      return;
+    }
+
     isLoading = true;
     loadingMessage = 'กำลังลงทะเบียนเข้าใช้งาน Google Drive';
     var googleDrive = GoogleDrive(CloudPickerMode.folder);
-    var signInSuccess = Platform.isWindows
-        ? await googleDrive.signInWithOAuth2()
-        : await googleDrive.signIn();
+    bool signInSuccess = false;
+    try {
+      signInSuccess = Platform.isWindows
+          ? await googleDrive.signInWithOAuth2()
+          : await googleDrive.signIn();
+    } catch (error) {
+      _showSnackBar('เกิดข้อผิดพลาด: ${error.toString()}');
+      if (mounted) {
+        isLoading = false;
+      }
+      return;
+    }
 
     if (signInSuccess) {
       Navigator.pushNamed(
         context,
         CloudPickerPage.routeName,
         arguments: CloudPickerPageArg(
-          cloudDrive: googleDrive..fileToUpload = File(_filePath),
+          cloudDrive: googleDrive..fileToUpload = file,
           title: 'Google Drive',
           headerImagePath: 'assets/images/ic_google_drive.png',
           rootName: 'Drive',
@@ -459,75 +502,99 @@ class _ResultPageController extends MyState<ResultPage> {
         //arguments: googleDrive..fileToUpload = File(_filePath),
       );
     } else {
-      showOkDialog(
-        context,
-        'ผิดพลาด',
-        textContent: 'ไม่สามารถลงทะเบียนเข้าใช้งาน Google Drive ได้',
-      );
+      _showSnackBar('ยกเลิกการเลือกไฟล์');
     }
-    isLoading = false;
+    if (mounted) {
+      isLoading = false;
+    }
   }
 
   _saveToOneDrive() async {
+    final file = await _resolveResultFile();
+    if (file == null) {
+      return;
+    }
+
     isLoading = true;
     loadingMessage = 'กำลังลงทะเบียนเข้าใช้งาน OneDrive';
     var oneDrive = OneDrive(CloudPickerMode.folder);
-    var signInSuccess = Platform.isWindows
-        ? await oneDrive.signInWithOAuth2()
-        : await oneDrive.signIn();
+    bool signInSuccess = false;
+    try {
+      signInSuccess = Platform.isWindows
+          ? await oneDrive.signInWithOAuth2()
+          : await oneDrive.signIn();
+    } catch (error) {
+      _showSnackBar('เกิดข้อผิดพลาด: ${error.toString()}');
+      if (mounted) {
+        isLoading = false;
+      }
+      return;
+    }
 
     if (signInSuccess) {
       Navigator.pushNamed(
         context,
         CloudPickerPage.routeName,
         arguments: CloudPickerPageArg(
-          cloudDrive: oneDrive..fileToUpload = File(_filePath),
+          cloudDrive: oneDrive..fileToUpload = file,
           title: 'OneDrive',
           headerImagePath: 'assets/images/ic_onedrive_new.png',
           rootName: 'Drive',
         ),
       );
     } else {
-      showOkDialog(
-        context,
-        'ผิดพลาด',
-        textContent: 'ไม่สามารถลงทะเบียนเข้าใช้งาน Google Drive ได้',
-      );
+      _showSnackBar('ยกเลิกการเลือกไฟล์');
     }
-    isLoading = false;
+    if (mounted) {
+      isLoading = false;
+    }
   }
 
   _handleClickShareButton() async {
-    if (await isIpad()) {
-      Share.shareFiles(
-        [_filePath],
-        // _isEncFile == false ? [_filePath] : [_fileEncryptPath],
-        sharePositionOrigin: Rect.fromLTWH(
-          0,
-          0,
-          screenWidth(context),
-          screenHeight(context) / 2,
-        ),
-      );
-    } else {
-      Share.shareFiles(
-        [_filePath],
+    final file = await _resolveResultFile();
+    if (file == null) {
+      return;
+    }
 
-        // _isEncFile == false ? [_filePath] : [_fileEncryptPath],
-      );
+    try {
+      if (Platform.isWindows) {
+        await Process.run('explorer', ['/select,', file.path]);
+        return;
+      }
+
+      final xFile = XFile(file.path);
+      if (await isIpad()) {
+        await Share.shareXFiles(
+          [xFile],
+          sharePositionOrigin: Rect.fromLTWH(
+            0,
+            0,
+            screenWidth(context),
+            screenHeight(context) / 2,
+          ),
+        );
+      } else {
+        await Share.shareXFiles([xFile]);
+      }
+    } catch (error) {
+      _showSnackBar('เกิดข้อผิดพลาด: ${error.toString()}');
     }
   }
 
-  _handleClickOpenButton() {
-    OpenFile.open(_filePath).then((result) {
+  Future<void> _handleClickOpenButton() async {
+    final file = await _resolveResultFile();
+    if (file == null) {
+      return;
+    }
+
+    try {
+      final result = await OpenFile.open(file.path);
       if (result.type == ResultType.noAppToOpen) {
-        showOkDialog(
-          context,
-          'ผิดพลาด',
-          textContent: 'ไม่พบแอปที่ใช้เปิดไฟล์ประเภทนี้',
-        );
+        _showSnackBar('ไม่พบแอปที่ใช้เปิดไฟล์ประเภทนี้');
       }
-    });
+    } catch (error) {
+      _showSnackBar('เกิดข้อผิดพลาด: ${error.toString()}');
+    }
   }
 
   _pickEmailShare() async {
@@ -872,59 +939,66 @@ class _ResultPageController extends MyState<ResultPage> {
   }
 
   _handlePrintingButton() async {
+    final file = await _resolveResultFile();
+    if (file == null) {
+      return;
+    }
+
     final doc = pw.Document();
-    String extension = p.extension(_filePath).substring(1).toLowerCase();
+    final extension = p.extension(file.path).substring(1).toLowerCase();
 
-    if (_isType(Constants.imageFileTypeList, extension)) {
-      final image = pw.MemoryImage(
-        File(_filePath).readAsBytesSync(),
-      );
+    try {
+      if (_isType(Constants.imageFileTypeList, extension)) {
+        final image = pw.MemoryImage(await file.readAsBytes());
 
-      doc.addPage(pw.Page(
-          pageFormat: PdfPageFormat.a4,
-          build: (pw.Context context) {
-            return pw.Center(child: pw.Image(image));
-          }));
+        doc.addPage(pw.Page(
+            pageFormat: PdfPageFormat.a4,
+            build: (pw.Context context) {
+              return pw.Center(child: pw.Image(image));
+            }));
 
-      await Printing.layoutPdf(
-          onLayout: (PdfPageFormat format) async => await doc.save());
-    } else if (_isType(Constants.documentFileTypeList, extension)) {
-      final pdf = File(_filePath).readAsBytesSync();
-      await Printing.layoutPdf(onLayout: (_) => pdf.buffer.asUint8List());
-    } else if (extension.toLowerCase() == 'zip') {
-      String uniqueTempDirPath = (await FileUtil.createUniqueTempDir()).path;
-      File(_filePath).copySync('$uniqueTempDirPath/images.zip');
-      FileUtil.unzip(dirPath: uniqueTempDirPath, filename: 'images.zip');
+        await Printing.layoutPdf(
+            onLayout: (PdfPageFormat format) async => await doc.save());
+      } else if (_isType(Constants.documentFileTypeList, extension)) {
+        final pdfBytes = await file.readAsBytes();
+        await Printing.layoutPdf(
+            onLayout: (_) => pdfBytes.buffer.asUint8List());
+      } else if (extension.toLowerCase() == 'zip') {
+        final uniqueTempDirPath =
+            (await FileUtil.createUniqueTempDir()).path;
+        await file.copy('$uniqueTempDirPath/images.zip');
+        FileUtil.unzip(dirPath: uniqueTempDirPath, filename: 'images.zip');
 
-      var filePathList =
-          Directory(uniqueTempDirPath /*p.join(p.dirname(filePath), 'images')*/)
-              .listSync()
-              .map((file) => file.path)
-              .toList();
+        final filePathList =
+            Directory(uniqueTempDirPath /*p.join(p.dirname(filePath), 'images')*/)
+                .listSync()
+                .map((file) => file.path)
+                .toList();
 
-      filePathList.forEach((ele) async {
-        if (_isType(Constants.imageFileTypeList,
-            p.extension(ele).substring(1).toLowerCase())) {
-          final image = pw.MemoryImage(
-            File(ele).readAsBytesSync(),
-          );
+        for (final ele in filePathList) {
+          if (_isType(Constants.imageFileTypeList,
+              p.extension(ele).substring(1).toLowerCase())) {
+            final image = pw.MemoryImage(File(ele).readAsBytesSync());
 
-          doc.addPage(pw.Page(
-              pageFormat: PdfPageFormat.a4,
-              build: (pw.Context context) {
-                return pw.Center(child: pw.Image(image));
-              }));
+            doc.addPage(pw.Page(
+                pageFormat: PdfPageFormat.a4,
+                build: (pw.Context context) {
+                  return pw.Center(child: pw.Image(image));
+                }));
+          }
         }
-      });
 
-      await Printing.layoutPdf(
-          onLayout: (PdfPageFormat format) async => await doc.save());
-    } else {
-      showOkDialog(
-        context,
-        'ผิดพลาด',
-        textContent: 'รูปแบบไฟล์ไม่รองรับ!',
-      );
+        await Printing.layoutPdf(
+            onLayout: (PdfPageFormat format) async => await doc.save());
+      } else {
+        showOkDialog(
+          context,
+          'ผิดพลาด',
+          textContent: 'รูปแบบไฟล์ไม่รองรับ!',
+        );
+      }
+    } catch (error) {
+      _showSnackBar('เกิดข้อผิดพลาด: ${error.toString()}');
     }
   }
 
@@ -934,4 +1008,118 @@ class _ResultPageController extends MyState<ResultPage> {
             .length >
         0;
   }
+
+  Future<File> _resolveResultFile() async {
+    if (_filePath == null || _filePath.isEmpty) {
+      _showSnackBar('ไม่พบไฟล์');
+      return null;
+    }
+
+    try {
+      final file = File(_filePath);
+      if (!await file.exists()) {
+        _showSnackBar('ไม่พบไฟล์');
+        return null;
+      }
+
+      final size = await file.length();
+      if (size <= 0) {
+        _showSnackBar('ไม่พบไฟล์');
+        return null;
+      }
+
+      if (size > _maxFileSizeInBytes) {
+        _showSnackBar('ไฟล์มีขนาดเกิน 20MB');
+        return null;
+      }
+
+      return file;
+    } catch (error) {
+      _showSnackBar('เกิดข้อผิดพลาด: ${error.toString()}');
+      return null;
+    }
+  }
+
+  void _showSnackBar(String message) {
+    if (!mounted || message == null || message.isEmpty) {
+      return;
+    }
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(content: Text(message)));
+  }
+}
+
+class _ResultActionData {
+  final String label;
+  final Widget icon;
+  final VoidCallback onPressed;
+
+  const _ResultActionData({this.label, this.icon, this.onPressed});
+}
+
+List<_ResultActionData> buildResultActions(_ResultPageController state) {
+  final actions = <_ResultActionData>[
+    _ResultActionData(
+      label: 'บันทึก',
+      icon: Icon(Icons.save, size: 18.0),
+      onPressed: state._handleClickSaveButton,
+    ),
+  ];
+
+  if (state._isEncFile == true && !Platform.isWindows) {
+    actions.add(
+      _ResultActionData(
+        label: 'เปิด',
+        icon: Icon(Icons.article_outlined, size: 18.0),
+        onPressed: state._handleClickOpenButton,
+      ),
+    );
+  } else {
+    actions.add(
+      _ResultActionData(
+        label: 'อนุญาต',
+        icon: Icon(Icons.contacts, size: 18.0),
+        onPressed: state._pickEmailShare,
+      ),
+    );
+  }
+
+  if (state._isEncFile == true && Platform.isWindows) {
+    actions.add(
+      _ResultActionData(
+        label: 'เปิด',
+        icon: Icon(Icons.article_outlined, size: 18.0),
+        onPressed: state._handleClickOpenButton,
+      ),
+    );
+  } else {
+    actions.add(
+      _ResultActionData(
+        label: 'แชร์',
+        icon: Icon(Icons.share, size: 18.0),
+        onPressed: state._handleClickShareButton,
+      ),
+    );
+  }
+
+  if (state._isEncFile == true) {
+    actions.add(
+      _ResultActionData(
+        label: 'เข้ารหัส',
+        icon: Icon(Icons.enhanced_encryption_outlined, size: 18.0),
+        onPressed: state._goEncryption,
+      ),
+    );
+  }
+
+  actions.add(
+    _ResultActionData(
+      label: 'พิมพ์',
+      icon: Icon(Icons.print, size: 18.0),
+      onPressed: state._handlePrintingButton,
+    ),
+  );
+
+  return actions;
 }

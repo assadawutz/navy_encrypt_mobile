@@ -64,6 +64,7 @@ class CloudPickerPage extends StatefulWidget {
 }
 
 class _CloudPickerPageController extends MyState<CloudPickerPage> {
+  static const int _maxFileSizeInBytes = 20 * 1024 * 1024;
   final List<CloudFile> _fileList = [];
   final _folderIdStack = MyStack<CloudFile>();
   String _rootName;
@@ -179,45 +180,77 @@ class _CloudPickerPageController extends MyState<CloudPickerPage> {
               'กำลังดาวน์โหลดไฟล์' + (percent != null ? '\n$percent%' : '');
         });
 
-        var size = await file.length();
-        if (size >= 20000000) {
-          isLoading = false;
+        if (file == null) {
+          _showSnackBar('ยกเลิกการเลือกไฟล์');
+          return;
+        }
 
-          setState(() {
-            isLoading = false;
+        if (!mounted) {
+          return;
+        }
 
-            showOkDialog(context, 'ผิดพลาด',
-                textContent: "ขนาดไฟล์ต้องไม่เกิน 20 MB");
-          });
-        } else {
-          if (file != null) {
-            var fileSize = await file.length();
-            var fSize = FileSize(fileSize);
-            var displayFileSize = fSize.getDisplaySize();
-            var displayFileByteSize = fSize.getDisplayByteSize();
+        final size = await file.length();
+        if (size > _maxFileSizeInBytes) {
+          _showSnackBar('ไฟล์มีขนาดเกิน 20MB');
+          return;
+        }
 
-            logOneLineWithBorderSingle(
-                '$_title file download success. File saved at ${file.path}, $displayFileSize ($displayFileByteSize bytes)');
+        final fileName = cloudFile.name ?? p.basename(file.path);
+        final extension = p.extension(fileName);
+        final normalizedExtension =
+            extension.isEmpty ? '' : extension.substring(1).toLowerCase();
+        final isEncryptedFile = normalizedExtension ==
+            Navec.encryptedFileExtension.toLowerCase();
 
-            logOneLineWithBorderDouble(
-                'File extension: ${cloudFile.fileExtension}');
-
-            Navigator.pushReplacementNamed(
+        if (!isEncryptedFile) {
+          if (normalizedExtension.isEmpty) {
+            showOkDialog(
               context,
-              cloudFile.fileExtension.toLowerCase() ==
-                      Navec.encryptedFileExtension.toLowerCase()
-                  ? DecryptionPage.routeName
-                  : EncryptionPage.routeName,
-              arguments: file.path,
+              'ผิดพลาด',
+              textContent: 'ไฟล์ที่เลือกไม่มีนามสกุล (extension)',
             );
+            return;
+          }
+
+          final isSupported = Constants.selectableFileTypeList.any(
+            (fileType) =>
+                fileType.fileExtension.toLowerCase() == normalizedExtension,
+          );
+
+          if (!isSupported) {
+            showOkDialog(
+              context,
+              'ผิดพลาด',
+              textContent:
+                  'แอปไม่รองรับการเข้ารหัสไฟล์ประเภท ${normalizedExtension.toUpperCase()}\n(ไฟล์ \'$fileName\')',
+            );
+            return;
           }
         }
-      } catch (error) {
-        showOkDialog(
+
+        final fileSize = size;
+        var fSize = FileSize(fileSize);
+        var displayFileSize = fSize.getDisplaySize();
+        var displayFileByteSize = fSize.getDisplayByteSize();
+
+        logOneLineWithBorderSingle(
+            '$_title file download success. File saved at ${file.path}, $displayFileSize ($displayFileByteSize bytes)');
+
+        logOneLineWithBorderDouble('File extension: ${cloudFile.fileExtension}');
+
+        if (!mounted) {
+          return;
+        }
+
+        Navigator.pushReplacementNamed(
           context,
-          'ผิดพลาด',
-          textContent: 'เกิดข้อผิดพลาดในการดาวน์โหลดไฟล์จาก $_title\n$error',
+          isEncryptedFile
+              ? DecryptionPage.routeName
+              : EncryptionPage.routeName,
+          arguments: file.path,
         );
+      } catch (error) {
+        _showSnackBar('เกิดข้อผิดพลาด: $error');
       } finally {
         isLoading = false;
       }
@@ -679,4 +712,13 @@ class _CloudPickerPageController extends MyState<CloudPickerPage> {
 
   @override
   Widget build(BuildContext context) => _CloudPickerPageView(this);
+
+  void _showSnackBar(String message) {
+    if (!mounted || message == null || message.isEmpty) {
+      return;
+    }
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(content: Text(message)));
+  }
 }
