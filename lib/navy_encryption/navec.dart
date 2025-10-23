@@ -112,6 +112,24 @@ class Navec {
       return null;
     }
 
+    if (algo == null) {
+      debugPrint('encryptFile: algorithm is required');
+      return null;
+    }
+
+    if (password == null) {
+      debugPrint('encryptFile: password is null');
+      return null;
+    }
+
+    var sanitizedUuid = (uuid ?? '').trim();
+    if (sanitizedUuid.length > headerUUIDFieldLength) {
+      sanitizedUuid = sanitizedUuid.substring(0, headerUUIDFieldLength);
+    }
+    while (sanitizedUuid.length < headerUUIDFieldLength) {
+      sanitizedUuid = '$sanitizedUuid$space';
+    }
+
     try {
       final sourceFile = File(filePath);
       if (!await sourceFile.exists()) {
@@ -139,12 +157,22 @@ class Navec {
         'UUID': uuid,
       };
 
-      var fileExtension = p.extension(filePath).substring(1);
+      final extensionWithDot = p.extension(filePath);
+      var fileExtension = extensionWithDot.isEmpty
+          ? ''
+          : extensionWithDot.substring(1);
+      if (fileExtension.length > Navec.headerFileExtensionFieldLength) {
+        fileExtension =
+            fileExtension.substring(0, Navec.headerFileExtensionFieldLength);
+      }
       while (fileExtension.length < Navec.headerFileExtensionFieldLength) {
         fileExtension = '$fileExtension$space';
       }
 
       var algoCode = algo.code;
+      if (algoCode.length > Navec.headerAlgorithmFieldLength) {
+        algoCode = algoCode.substring(0, Navec.headerAlgorithmFieldLength);
+      }
       while (algoCode.length < Navec.headerAlgorithmFieldLength) {
         algoCode = '$algoCode$space';
       }
@@ -154,7 +182,7 @@ class Navec {
         ...utf8.encode(fileExtension),
         ...utf8.encode(algoCode),
         ...encryptedBytes,
-        ...utf8.encode(uuid),
+        ...utf8.encode(sanitizedUuid),
       ];
 
       var outFilename =
