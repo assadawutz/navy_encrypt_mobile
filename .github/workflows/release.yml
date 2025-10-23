@@ -111,9 +111,6 @@ KEYPROPS
           flutter-version: ${{ env.FLUTTER_VERSION }}
           channel: ${{ env.FLUTTER_CHANNEL }}
 
-      - name: Install dependencies
-        run: flutter pub get
-
       - name: Validate iOS signing inputs
         shell: bash
         run: |
@@ -133,6 +130,13 @@ KEYPROPS
             echo "Missing export options plist at ${EXPORT_OPTIONS}."
             exit 1
           fi
+          if [[ ! -s "${EXPORT_OPTIONS}" ]]; then
+            echo "Export options plist at ${EXPORT_OPTIONS} is empty."
+            exit 1
+          fi
+
+      - name: Install dependencies
+        run: flutter pub get
 
       - name: Configure temporary keychain
         shell: bash
