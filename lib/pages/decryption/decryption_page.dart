@@ -63,9 +63,14 @@ class _DecryptionPageController extends MyState<DecryptionPage> {
 
     print('PATH OF FILE TO BE DECRYPTED: $_toBeDecryptedFilePath');
 
-    return isLandscapeLayout(context)
-        ? _DecryptionPageViewWin(this)
-        : _DecryptionPageView(this);
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final useDesktopLayout = constraints.maxWidth >= 900;
+        return useDesktopLayout
+            ? _DecryptionPageViewWin(this)
+            : _DecryptionPageView(this);
+      },
+    );
   }
 
   _handleClickPasswordEye() {

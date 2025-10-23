@@ -70,9 +70,14 @@ class HomePageController extends MyState<HomePage> {
 
   @override
   Widget build(BuildContext context) {
-    return isLandscapeLayout(context)
-        ? _HomePageViewWin(this)
-        : _HomePageView(this);
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final useDesktopLayout = constraints.maxWidth >= 900;
+        return useDesktopLayout
+            ? _HomePageViewWin(this)
+            : _HomePageView(this);
+      },
+    );
   }
 
   @override

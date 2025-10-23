@@ -19,6 +19,29 @@
    fvm flutter pub get
    ```
 
+## Configuration and secrets
+
+1. Copy `.env.example` to `.env` and replace each value with production-ready
+   secrets. The file is loaded at runtime and also used by the Android Gradle
+   scripts when local environment variables are unavailable.
+2. Provide a signing keystore when creating release builds:
+   - **CI** – Add `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`,
+     `ANDROID_KEY_ALIAS`, and `ANDROID_KEY_PASSWORD` secrets. The workflow
+     decodes the keystore and wires the Gradle properties automatically.
+   - **Local** – Export the same secrets as environment variables or update the
+     `.env` file with the keystore path/passwords. The default sample points to
+     `../secrets/navy_release.keystore`, which resolves to a sibling directory
+     outside of version control.
+3. Windows release archives are generated with
+   `windows/scripts/package_release.ps1`, which bundles the runner output into a
+   portable ZIP without tracking binaries in git.
+4. ก่อน build iOS ให้สร้าง asset ด้วยสคริปต์:
+   ```bash
+   fvm flutter pub run tool/generate_apple_assets.dart
+   ```
+   ถ้าเครื่องไม่มี FVM ให้ใช้ `flutter pub run ...` ตรง ๆ ก็ได้
+   (ทางเลือกสำรองคือรันบน macOS CI แล้วดึง asset ที่ workflow สร้างให้).
+
 ## Automated quality gates
 
 This repository ships with a comprehensive automation suite to protect the

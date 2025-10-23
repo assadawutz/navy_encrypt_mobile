@@ -4,6 +4,8 @@ import 'dart:io' show Platform;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:navy_encrypt/core/env_loader.dart';
+import 'package:navy_encrypt/core/platform_guard.dart';
 import 'package:navy_encrypt/etc/constants.dart';
 import 'package:navy_encrypt/etc/share_intent_handler.dart';
 import 'package:navy_encrypt/models/loading_message.dart';
@@ -34,6 +36,51 @@ class MyHttpOverrides extends HttpOverrides {
   }
 }
 
+class GuardBlockedPage extends StatelessWidget {
+  final String message;
+
+  const GuardBlockedPage({Key key, @required this.message}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Scaffold(
+      body: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 520),
+          child: Padding(
+            padding: const EdgeInsets.all(24.0),
+            child: Card(
+              elevation: 4,
+              child: Padding(
+                padding: const EdgeInsets.all(32.0),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.lock, size: 64, color: theme.primaryColor),
+                    const SizedBox(height: 24),
+                    Text(
+                      'ไม่สามารถเริ่มใช้งานได้',
+                      style: theme.textTheme.headline6,
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      message ?? 'ตรวจสอบการตั้งค่าระบบและลองใหม่อีกครั้ง',
+                      style: theme.textTheme.subtitle1,
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 Future<void> main(List<String> arguments) async {
   // get command-line arg in desktop app
   // if (Platform.isAndroid == true || Platform.isIOS == true) {
@@ -43,6 +90,9 @@ Future<void> main(List<String> arguments) async {
 
 // Ideal time to initialize
 //   await FirebaseAuth.instance.useAuthEmulator('localhost', 9099);
+
+  final envConfig = await EnvConfig.load();
+  final guardResult = await PlatformGuard.ensureInitialized();
 
   SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,
@@ -58,11 +108,20 @@ Future<void> main(List<String> arguments) async {
 
   runApp(ChangeNotifierProvider(
     create: (_) => LoadingMessage(),
-    child: MyApp(),
+    child: MyApp(
+      env: envConfig,
+      guardResult: guardResult,
+    ),
   ));
 }
 
 class MyApp extends StatefulWidget {
+  final EnvConfig env;
+  final PlatformGuardResult guardResult;
+
+  const MyApp({Key key, @required this.env, @required this.guardResult})
+      : super(key: key);
+
   @override
   _MyAppState createState() => _MyAppState();
 }
@@ -75,6 +134,9 @@ class _MyAppState extends State<MyApp> {
 
   //var _showSplash = true;
   String _filePath;
+
+  String get _appTitle =>
+      widget.env?.get('APP_DISPLAY_NAME', fallback: 'รับส่งไฟล์') ?? 'รับส่งไฟล์';
 
   @override
   void initState() {
@@ -131,7 +193,7 @@ class _MyAppState extends State<MyApp> {
     //   setWindowTitle('รับส่งไฟล์');
     // }
     return MaterialApp(
-      title: 'รับส่งไฟล์',
+      title: _appTitle,
       theme: ThemeData(
         fontFamily: 'DBHeavent',
         primaryColor: Constants.primaryColor,
@@ -239,6 +301,10 @@ class _MyAppState extends State<MyApp> {
   }
 
   Widget _getHome() {
+    if (widget.guardResult != null && !widget.guardResult.isReady) {
+      return GuardBlockedPage(message: widget.guardResult.message);
+    }
+
     Widget pageToGo;
 
     if (_filePath == null) {

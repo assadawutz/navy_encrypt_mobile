@@ -64,9 +64,16 @@ class _SettingsPageController extends MyState<SettingsPage> {
   }
 
   @override
-  Widget build(BuildContext context) => isLandscapeLayout(context)
-      ? _SettingsPageViewWin(this)
-      : _SettingsPageView(this);
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final useDesktopLayout = constraints.maxWidth >= 900;
+        return useDesktopLayout
+            ? _SettingsPageViewWin(this)
+            : _SettingsPageView(this);
+      },
+    );
+  }
 
   int getWatermarkStatusIndex(WatermarkRegisterStatus status) =>
       WatermarkRegisterStatus.values.indexWhere((item) => item == status);

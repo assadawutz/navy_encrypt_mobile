@@ -4,14 +4,18 @@ on:
   workflow_dispatch:
     inputs:
       release_tag:
-        description: 'Optional tag to apply to the generated artifacts (ex: v1.2.3)'
-        required: false
+        description: 'Tag (e.g. v4.2.0) that matches the top entry of CHANGELOG.md'
+        required: true
       upload_android:
         description: 'Build Android release APK'
         required: false
         default: 'true'
       upload_ios:
         description: 'Build iOS enterprise IPA'
+        required: false
+        default: 'true'
+      upload_windows:
+        description: 'Build Windows release zip'
         required: false
         default: 'true'
   push:
@@ -23,11 +27,52 @@ env:
   FLUTTER_CHANNEL: 'stable'
 
 jobs:
+  release-metadata:
+    name: Validate release metadata
+    runs-on: ubuntu-latest
+    outputs:
+      release_tag: ${{ steps.determine-tag.outputs.tag }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Determine release tag
+        id: determine-tag
+        shell: bash
+        run: |
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            TAG='${{ github.event.inputs.release_tag }}'
+            if [[ -z "${TAG}" ]]; then
+              echo 'release_tag input is required when manually dispatching.'
+              exit 1
+            fi
+          else
+            TAG="${GITHUB_REF_NAME}"
+          fi
+          echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
+
+      - name: Ensure changelog entry matches tag
+        shell: bash
+        run: |
+          TAG='${{ steps.determine-tag.outputs.tag }}'
+          CLEAN_TAG="${TAG#v}"
+          TOP_CHANGELOG_ENTRY=$(grep -m1 '^## \[' CHANGELOG.md | sed -E 's/^## \[([^]]+)\].*/\1/')
+          if [[ -z "${TOP_CHANGELOG_ENTRY}" ]]; then
+            echo 'Unable to read the top entry from CHANGELOG.md'
+            exit 1
+          fi
+          if [[ "${CLEAN_TAG}" != "${TOP_CHANGELOG_ENTRY}" ]]; then
+            echo "Top changelog entry (${TOP_CHANGELOG_ENTRY}) does not match release tag ${CLEAN_TAG}" >&2
+            exit 1
+          fi
+
   android-release:
     if: github.event_name != 'workflow_dispatch' || github.event.inputs.upload_android == 'true'
     name: Android release APK
     runs-on: ubuntu-latest
+    needs: release-metadata
     env:
+      RELEASE_TAG: ${{ needs.release-metadata.outputs.release_tag }}
       ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
       ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
       ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
@@ -41,7 +86,7 @@ jobs:
         uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: '11'
+          java-version: '17'
 
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
@@ -53,7 +98,7 @@ jobs:
         shell: bash
         run: |
           if [[ -z "${ANDROID_KEYSTORE_BASE64}" || -z "${ANDROID_KEYSTORE_PASSWORD}" || -z "${ANDROID_KEY_ALIAS}" || -z "${ANDROID_KEY_PASSWORD}" ]]; then
-            echo 'Android signing secrets are missing. Please configure ANDROID_KEYSTORE_BASE64, ANDROID_KEYSTORE_PASSWORD, ANDROID_KEY_ALIAS, ANDROID_KEY_PASSWORD.'
+            echo 'Android signing secrets are missing. Configure ANDROID_KEYSTORE_BASE64, ANDROID_KEYSTORE_PASSWORD, ANDROID_KEY_ALIAS, ANDROID_KEY_PASSWORD.'
             exit 1
           fi
 
@@ -61,12 +106,12 @@ jobs:
         shell: bash
         run: |
           echo "${ANDROID_KEYSTORE_BASE64}" | base64 --decode > "${KEYSTORE_PATH}"
-          cat <<'KEYPROPS' > android/key.properties
-storePassword=${ANDROID_KEYSTORE_PASSWORD}
-keyPassword=${ANDROID_KEY_PASSWORD}
-keyAlias=${ANDROID_KEY_ALIAS}
-storeFile=${KEYSTORE_PATH}
-KEYPROPS
+          {
+            echo "ANDROID_KEYSTORE_PASSWORD=${ANDROID_KEYSTORE_PASSWORD}"
+            echo "ANDROID_KEY_PASSWORD=${ANDROID_KEY_PASSWORD}"
+            echo "ANDROID_KEY_ALIAS=${ANDROID_KEY_ALIAS}"
+            echo "ANDROID_KEYSTORE_PATH=${KEYSTORE_PATH}"
+          } >> "$GITHUB_ENV"
 
       - name: Install dependencies
         run: flutter pub get
@@ -85,8 +130,9 @@ KEYPROPS
     if: github.event_name != 'workflow_dispatch' || github.event.inputs.upload_ios == 'true'
     name: iOS enterprise IPA
     runs-on: macos-latest
-    needs: []
+    needs: release-metadata
     env:
+      RELEASE_TAG: ${{ needs.release-metadata.outputs.release_tag }}
       IOS_CERTIFICATE_BASE64: ${{ secrets.IOS_ENTERPRISE_CERT_P12_BASE64 }}
       IOS_CERTIFICATE_PASSWORD: ${{ secrets.IOS_ENTERPRISE_CERT_PASSWORD }}
       IOS_PROVISIONING_PROFILE_BASE64: ${{ secrets.IOS_ENTERPRISE_PROFILE_BASE64 }}
@@ -114,11 +160,14 @@ KEYPROPS
       - name: Install dependencies
         run: flutter pub get
 
+      - name: Generate iOS assets
+        run: flutter pub run tool/generate_apple_assets.dart
+
       - name: Validate iOS signing inputs
         shell: bash
         run: |
           if [[ -z "${IOS_CERTIFICATE_BASE64}" || -z "${IOS_CERTIFICATE_PASSWORD}" || -z "${IOS_PROVISIONING_PROFILE_BASE64}" ]]; then
-            echo 'iOS enterprise signing secrets are missing. Please configure IOS_ENTERPRISE_CERT_P12_BASE64, IOS_ENTERPRISE_CERT_PASSWORD, IOS_ENTERPRISE_PROFILE_BASE64.'
+            echo 'iOS enterprise signing secrets are missing. Configure IOS_ENTERPRISE_CERT_P12_BASE64, IOS_ENTERPRISE_CERT_PASSWORD, IOS_ENTERPRISE_PROFILE_BASE64.'
             exit 1
           fi
           if [[ -z "${IOS_KEYCHAIN_PASSWORD}" ]]; then
@@ -153,8 +202,8 @@ KEYPROPS
 
       - name: Build enterprise IPA
         env:
-          FLUTTER_BUILD_NAME: ${{ github.event.inputs.release_tag || github.ref_name }}
-        run: flutter build ipa --release --no-pub --export-options-plist "${EXPORT_OPTIONS}"
+          FLUTTER_BUILD_NAME: ${{ env.RELEASE_TAG }}
+        run: flutter build ipa --release --no-pub --no-codesign --export-options-plist "${EXPORT_OPTIONS}"
 
       - name: Upload iOS artifact
         uses: actions/upload-artifact@v4
@@ -168,3 +217,38 @@ KEYPROPS
         shell: bash
         run: |
           security delete-keychain "${KEYCHAIN_PATH}" || true
+
+  windows-release:
+    if: github.event_name != 'workflow_dispatch' || github.event.inputs.upload_windows == 'true'
+    name: Windows release zip
+    runs-on: windows-latest
+    needs: release-metadata
+    env:
+      RELEASE_TAG: ${{ needs.release-metadata.outputs.release_tag }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: ${{ env.FLUTTER_CHANNEL }}
+
+      - name: Enable Windows desktop
+        run: flutter config --enable-windows-desktop
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Build Windows release package
+        shell: pwsh
+        run: |
+          ./windows/scripts/package_release.ps1 -FlutterExecutable flutter -BuildMode release -OutputDirectory "build/windows_release"
+
+      - name: Upload Windows artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-release-zip
+          path: build/windows_release.zip
+          if-no-files-found: error

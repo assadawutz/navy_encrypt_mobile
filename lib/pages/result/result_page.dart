@@ -98,9 +98,14 @@ class _ResultPageController extends MyState<ResultPage> {
 
     logOneLineWithBorderSingle('File path: $_filePath');
     logOneLineWithBorderSingle('File path: $_userID');
-    return isLandscapeLayout(context)
-        ? _ResultPageViewWin(this)
-        : _ResultPageView(this);
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final useDesktopLayout = constraints.maxWidth >= 900;
+        return useDesktopLayout
+            ? _ResultPageViewWin(this)
+            : _ResultPageView(this);
+      },
+    );
   }
 
   bool _isImageFile() {
