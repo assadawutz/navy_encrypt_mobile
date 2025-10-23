@@ -436,6 +436,45 @@ class Navec {
       );
     }
 
+    if (outFile == null) {
+      return null;
+    }
+
+    final originalBase = p.basenameWithoutExtension(filePath);
+    String baseName = originalBase;
+    for (final marker in const ['_watermarked_', '_encrypted_', '_decrypted_']) {
+      final index = baseName.lastIndexOf(marker);
+      if (index != -1) {
+        final suffix = baseName.substring(index + marker.length);
+        if (int.tryParse(suffix) != null) {
+          baseName = baseName.substring(0, index);
+        }
+      }
+    }
+    final timestamp = DateTime.now().millisecondsSinceEpoch;
+    final extensionSuffix = p.extension(outFile.path);
+    final newFileName =
+        '${baseName}_watermarked_${timestamp}${extensionSuffix}';
+    final targetPath = p.join(p.dirname(outFile.path), newFileName);
+
+    try {
+      if (await outFile.exists()) {
+        return await outFile.rename(targetPath);
+      }
+    } catch (error) {
+      debugPrint('addWatermark rename error: $error');
+    }
+
+    try {
+      final copiedFile = await outFile.copy(targetPath);
+      if (await outFile.exists() && outFile.path != copiedFile.path) {
+        await outFile.delete().catchError((_) {});
+      }
+      return copiedFile;
+    } catch (error) {
+      debugPrint('addWatermark copy error: $error');
+    }
+
     return outFile;
   }
 

@@ -207,6 +207,7 @@ class _EncryptionPageController extends MyState<EncryptionPage> {
       );
 
       if (file == null) {
+        _showSnackBar('เกิดข้อผิดพลาด: ไม่สามารถใส่ลายน้ำได้');
         isLoading = false;
         return;
       }
@@ -294,6 +295,10 @@ class _EncryptionPageController extends MyState<EncryptionPage> {
     var message = doWatermark ? 'ใส่ลายน้ำ' : '';
     message =
         '$message${doEncrypt ? ((message == '' ? '' : 'และ') + 'เข้ารหัส') : ''}';
+    if (!mounted) {
+      return;
+    }
+
     Navigator.pushReplacementNamed(
       context,
       ResultPage.routeName,
