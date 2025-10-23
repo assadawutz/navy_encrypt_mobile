@@ -24,6 +24,19 @@ if (flutterVersionName == null) {
     flutterVersionName = '1.0'
 }
 
+def keystoreProperties = new Properties()
+def keystorePropertiesFile = rootProject.file('key.properties')
+if (keystorePropertiesFile.exists()) {
+    keystorePropertiesFile.withReader('UTF-8') { reader ->
+        keystoreProperties.load(reader)
+    }
+}
+def requiredSigningKeys = ['keyAlias', 'keyPassword', 'storePassword', 'storeFile']
+boolean hasReleaseKeystore = requiredSigningKeys.every { key ->
+    def value = keystoreProperties.getProperty(key)
+    return value != null && !value.trim().isEmpty()
+}
+
 apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
 apply from: "$flutterRoot/packages/flutter_tools/gradle/flutter.gradle"
@@ -59,11 +72,29 @@ android {
         multiDexEnabled true
     }
 
+    signingConfigs {
+        if (hasReleaseKeystore) {
+            release {
+                keyAlias keystoreProperties['keyAlias']
+                keyPassword keystoreProperties['keyPassword']
+                storePassword keystoreProperties['storePassword']
+                storeFile file(keystoreProperties['storeFile'])
+            }
+        }
+    }
+
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig signingConfigs.debug
+            if (hasReleaseKeystore) {
+                signingConfig signingConfigs.release
+            } else {
+                def missingConfigMessage = 'Release signing configuration is missing. Provide android/key.properties with keyAlias, keyPassword, storePassword, and storeFile entries.'
+                if (System.getenv('CI')?.toBoolean()) {
+                    throw new GradleException(missingConfigMessage)
+                }
+                println "${missingConfigMessage} Falling back to debug signing for local builds."
+                signingConfig signingConfigs.debug
+            }
         }
     }
     buildFeatures {
