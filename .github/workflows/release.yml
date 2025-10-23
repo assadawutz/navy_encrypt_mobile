@@ -162,7 +162,38 @@ KEYPROPS
           echo "${IOS_PROVISIONING_PROFILE_BASE64}" | base64 --decode > "${PROFILE_PATH}"
           mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
           UUID=$(/usr/libexec/PlistBuddy -c "Print UUID" "${PROFILE_PATH}")
+          PROFILE_NAME=$(/usr/libexec/PlistBuddy -c "Print Name" "${PROFILE_PATH}")
+          if [[ -z "${UUID}" || -z "${PROFILE_NAME}" ]]; then
+            echo 'Failed to read UUID or Name from the provisioning profile.'
+            exit 1
+          fi
           cp "${PROFILE_PATH}" "${HOME}/Library/MobileDevice/Provisioning Profiles/${UUID}.mobileprovision"
+          echo "Using provisioning profile '${PROFILE_NAME}' (${UUID})"
+          export PROFILE_NAME
+          python3 <<'PY'
+import os
+import plistlib
+import pathlib
+import sys
+
+export_options_path = pathlib.Path(os.environ["EXPORT_OPTIONS"]).expanduser()
+if not export_options_path.exists():
+    sys.exit(f"Export options plist not found at {export_options_path}.")
+
+profile_name = os.environ.get("PROFILE_NAME")
+if not profile_name:
+    sys.exit("PROFILE_NAME environment variable is empty.")
+
+bundle_id = "th.mi.navy.navy-encrypt"
+with export_options_path.open("rb") as plist_file:
+    data = plistlib.load(plist_file)
+
+provisioning_profiles = data.setdefault("provisioningProfiles", {})
+provisioning_profiles[bundle_id] = profile_name
+
+with export_options_path.open("wb") as plist_file:
+    plistlib.dump(data, plist_file)
+PY
 
       - name: Set Flutter build name from dispatch input
         if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.release_tag != '' }}
