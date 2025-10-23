@@ -295,8 +295,7 @@ class HomePageController extends MyState<HomePage> {
       {
         'image': 'assets/images/ic_onedrive_new.png',
         'text': 'OneDrive',
-        // 'onClick': _pickFromOneDrive,
-        'onClick': _handleClickShareButton,
+        'onClick': _pickFromOneDrive,
       },
       {
         'image': 'assets/images/ic_history.png',
@@ -320,20 +319,8 @@ class HomePageController extends MyState<HomePage> {
       ..showSnackBar(SnackBar(content: Text(message)));
   }
 
-  _handleClickShareButton() async {
-    if (await isIpad()) {
-      Share.shareXFiles(
-        [XFile("_filePath")],
-        sharePositionOrigin: Rect.fromLTWH(
-          0,
-          0,
-          screenWidth(context),
-          screenHeight(context) / 2,
-        ),
-      );
-    } else {
-      Share.shareXFiles([XFile("_filePath")]);
-    }
+  _handleClickShareButton() {
+    _showSnackBar('ไม่พบไฟล์');
   }
 
   _pickFromFileSystem(BuildContext context) async {
