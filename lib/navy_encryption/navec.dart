@@ -157,20 +157,8 @@ class Navec {
         ...utf8.encode(uuid),
       ];
 
-      final originalBase = p.basenameWithoutExtension(filePath);
-      String baseName = originalBase;
-      for (final marker in const ['_watermarked_', '_encrypted_', '_decrypted_']) {
-        final index = baseName.lastIndexOf(marker);
-        if (index != -1) {
-          final suffix = baseName.substring(index + marker.length);
-          if (int.tryParse(suffix) != null) {
-            baseName = baseName.substring(0, index);
-          }
-        }
-      }
-      final timestamp = DateTime.now().millisecondsSinceEpoch;
-      final outFilename =
-          '${baseName}_encrypted_${timestamp}.${Navec.encryptedFileExtension}';
+      var outFilename =
+          '${p.basenameWithoutExtension(filePath)}.${Navec.encryptedFileExtension}';
       logMap['Encrypted file name'] = outFilename;
 
       File outFile = await FileUtil.createFileFromBytes(
@@ -385,22 +373,8 @@ class Navec {
             textContent: 'รหัสผ่านไม่ถูกต้อง หรือเกิดข้อผิดพลาดในการถอดรหัส',
           );
         } else {
-          final originalBase = p.basenameWithoutExtension(filePath);
-          String baseName = originalBase;
-          for (final marker in const ['_watermarked_', '_encrypted_', '_decrypted_']) {
-            final index = baseName.lastIndexOf(marker);
-            if (index != -1) {
-              final suffix = baseName.substring(index + marker.length);
-              if (int.tryParse(suffix) != null) {
-                baseName = baseName.substring(0, index);
-              }
-            }
-          }
-          final timestamp = DateTime.now().millisecondsSinceEpoch;
-          final extensionSuffix =
-              (fileExtension?.isNotEmpty ?? false) ? '.$fileExtension' : '';
-          final outFilename =
-              '${baseName}_decrypted_${timestamp}$extensionSuffix';
+          var outFilename =
+              '${p.basenameWithoutExtension(filePath)}.$fileExtension';
           logMap['Decrypted file name'] = outFilename;
 
           outFile = await FileUtil.createFileFromBytes(

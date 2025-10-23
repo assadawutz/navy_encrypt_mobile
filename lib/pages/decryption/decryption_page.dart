@@ -240,10 +240,6 @@ class _DecryptionPageController extends MyState<DecryptionPage> {
       return;
     }
 
-    if (!mounted) {
-      return;
-    }
-
     Navigator.pushReplacementNamed(
       context,
       ResultPage.routeName,

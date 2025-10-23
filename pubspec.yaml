@@ -1,7 +1,7 @@
 name: navy_encrypt
 description: A new Flutter application.
 
-version: 4.0.1+2
+version: 4.1.1+4
 environment:
   sdk: ">=2.10.0 <3.0.0"  # Flutter 3.3.8 ใช้ Dart 2.18.x
 
@@ -145,3 +145,8 @@ flutter:
         - asset: assets/fonts/DB_Heavent_v3.2.ttf
         - asset: assets/fonts/DB_Heavent_Med_v3.2.ttf
           weight: 700
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^2.0.0

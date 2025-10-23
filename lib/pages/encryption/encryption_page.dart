@@ -141,11 +141,6 @@ class _EncryptionPageController extends MyState<EncryptionPage> {
       return;
     }
 
-    if (_toBeEncryptedFilePath.toLowerCase().endsWith('.enc')) {
-      _showSnackBar('ไฟล์ถูกเข้ารหัสแล้ว');
-      return;
-    }
-
     try {
       final originalFile = File(_toBeEncryptedFilePath);
       if (!await originalFile.exists()) {
