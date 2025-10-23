@@ -4,7 +4,6 @@ import 'dart:io' show Directory, File, FileSystemEntity, Platform;
 import 'dart:typed_data';
 
 import 'package:file_picker/file_picker.dart';
-
 // import 'package:file_picker_cross/file_picker_cross.dart';
 // import 'package:file_picker_cross/file_picker_cross.dart';
 import 'package:flutter/foundation.dart';
@@ -23,7 +22,6 @@ import 'package:navy_encrypt/etc/constants.dart';
 import 'package:navy_encrypt/etc/dimension_util.dart';
 import 'package:navy_encrypt/etc/file_util.dart';
 import 'package:navy_encrypt/etc/utils.dart';
-import 'package:navy_encrypt/navy_encryption/navec.dart';
 import 'package:navy_encrypt/pages/cloud_picker/cloud_picker_page.dart';
 import 'package:navy_encrypt/pages/cloud_picker/google_drive.dart';
 import 'package:navy_encrypt/pages/cloud_picker/local_drive.dart';
@@ -32,13 +30,11 @@ import 'package:navy_encrypt/pages/decryption/decryption_page.dart';
 import 'package:navy_encrypt/pages/encryption/encryption_page.dart';
 import 'package:navy_encrypt/pages/history/history_page.dart';
 import 'package:navy_encrypt/pages/settings/settings_page.dart';
-
 // import 'package:package_info_plus/package_info_plus.dart';
 import 'package:path/path.dart' as p;
 import 'package:permission_handler/permission_handler.dart';
 
 part 'home_page_view.dart';
-
 part 'home_page_view_win.dart';
 
 class HomePage extends StatefulWidget {
@@ -321,7 +317,7 @@ class HomePageController extends MyState<HomePage> {
                 width: Constants.LIST_DIALOG_ICON_SIZE,
                 height: Constants.LIST_DIALOG_ICON_SIZE,
               ),*/
-              image: Icon(
+              image: const Icon(
                 FontAwesomeIcons.solidFolderOpen,
                 size: Constants.LIST_DIALOG_ICON_SIZE,
                 color: Constants.LIST_DIALOG_ICON_COLOR,
@@ -346,7 +342,7 @@ class HomePageController extends MyState<HomePage> {
             DialogTileData(
               label:
                   'โฟลเดอร์อื่นๆ${Platform.isWindows ? ' ' : '\n'}(เลือกจาก System Dialog)',
-              image: Icon(
+              image: const Icon(
                 FontAwesomeIcons.sdCard,
                 size: Constants.LIST_DIALOG_ICON_SIZE,
                 color: Constants.LIST_DIALOG_ICON_COLOR,
@@ -507,21 +503,21 @@ class HomePageController extends MyState<HomePage> {
   // }
 
   _pickFromCamera(BuildContext context) async {
-      if (Platform.isWindows) {
-        _showSnackBar('Windows ไม่รองรับกล้อง');
-        return;
-      }
+    if (Platform.isWindows) {
+      _showSnackBar('Windows ไม่รองรับกล้อง');
+      return;
+    }
 
-      showDialog(
-        context: context,
-        builder: (BuildContext dialogContext) {
-          return MyDialog.buildPickerDialog(
-              headerImage: Image.asset('assets/images/ic_camera.png',
+    showDialog(
+      context: context,
+      builder: (BuildContext dialogContext) {
+        return MyDialog.buildPickerDialog(
+            headerImage: Image.asset('assets/images/ic_camera.png',
                 width: Constants.LIST_DIALOG_HEADER_IMAGE_SIZE),
             items: [
               DialogTileData(
                 label: 'ถ่ายภาพนิ่ง',
-                image: Icon(
+                image: const Icon(
                   Icons.camera_alt,
                   size: Constants.LIST_DIALOG_ICON_SIZE,
                   color: Constants.LIST_DIALOG_ICON_COLOR,
@@ -534,7 +530,7 @@ class HomePageController extends MyState<HomePage> {
               ),
               DialogTileData(
                 label: 'ถ่ายวิดีโอ',
-                image: Icon(
+                image: const Icon(
                   Icons.videocam_rounded,
                   size: Constants.LIST_DIALOG_ICON_SIZE,
                   color: Constants.LIST_DIALOG_ICON_COLOR,
@@ -578,7 +574,7 @@ class HomePageController extends MyState<HomePage> {
               items: [
                 DialogTileData(
                   label: 'เลือกรูปภาพ',
-                  image: Icon(
+                  image: const Icon(
                     Icons.image,
                     size: Constants.LIST_DIALOG_ICON_SIZE,
                     color: Constants.LIST_DIALOG_ICON_COLOR,
@@ -594,7 +590,7 @@ class HomePageController extends MyState<HomePage> {
                 ),
                 DialogTileData(
                   label: 'เลือกวิดีโอ',
-                  image: Icon(
+                  image: const Icon(
                     Icons.video_library,
                     size: Constants.LIST_DIALOG_ICON_SIZE,
                     color: Constants.LIST_DIALOG_ICON_COLOR,
