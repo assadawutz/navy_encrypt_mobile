@@ -39,6 +39,7 @@ class DecryptionPage extends StatefulWidget {
 }
 
 class _DecryptionPageController extends MyState<DecryptionPage> {
+  static const int _maxFileSizeInBytes = 20 * 1024 * 1024;
   String _toBeDecryptedFilePath;
   final _passwordEditingController = TextEditingController();
   var _passwordVisible = false;
@@ -62,7 +63,9 @@ class _DecryptionPageController extends MyState<DecryptionPage> {
 
     print('PATH OF FILE TO BE DECRYPTED: $_toBeDecryptedFilePath');
 
-    return _DecryptionPageView(this);
+    return isLandscapeLayout(context)
+        ? _DecryptionPageViewWin(this)
+        : _DecryptionPageView(this);
   }
 
   _handleClickPasswordEye() {
@@ -92,6 +95,40 @@ class _DecryptionPageController extends MyState<DecryptionPage> {
       return;
     }
 
+    if (_toBeDecryptedFilePath == null ||
+        _toBeDecryptedFilePath.trim().isEmpty) {
+      _showSnackBar('ไม่พบไฟล์');
+      return;
+    }
+
+    File sourceFile;
+    try {
+      sourceFile = File(_toBeDecryptedFilePath);
+      if (!await sourceFile.exists()) {
+        _showSnackBar('ไม่พบไฟล์');
+        return;
+      }
+
+      if (!sourceFile.path.toLowerCase().endsWith('.enc')) {
+        _showSnackBar('ไฟล์ต้องมีนามสกุล .enc');
+        return;
+      }
+
+      final size = await sourceFile.length();
+      if (size <= 0) {
+        _showSnackBar('ไม่พบไฟล์');
+        return;
+      }
+
+      if (size > _maxFileSizeInBytes) {
+        _showSnackBar('ไฟล์มีขนาดเกิน 20MB');
+        return;
+      }
+    } catch (error) {
+      _showSnackBar('เกิดข้อผิดพลาด: ${error.toString()}');
+      return;
+    }
+
     isLoading = true;
     List decryptData;
     File outFile;
@@ -113,7 +150,7 @@ class _DecryptionPageController extends MyState<DecryptionPage> {
       // var uid = Uuid();
       // uuid = uid.v4();
     } on Exception catch (e) {
-      showOkDialog(context, 'เกิดข้อผิดพลาดในการถอดรหัส: $e');
+      _showSnackBar('เกิดข้อผิดพลาด: ${e.toString()}');
     }
     String getLog;
 
@@ -198,20 +235,36 @@ class _DecryptionPageController extends MyState<DecryptionPage> {
 
     isLoading = false;
 
-    if (outFile != null) {
-      Navigator.pushReplacementNamed(
-        context,
-        ResultPage.routeName,
-        arguments: {
-          'filePath': outFile.path,
-          'message': 'ถอดรหัสสำเร็จ',
-          'isEncryption': false,
-          'userID': getLog,
-          'fileEncryptPath': _toBeDecryptedFilePath,
-          'signatureCode': null,
-          'type': 'decryption'
-        },
-      );
+    if (outFile == null) {
+      _showSnackBar('เกิดข้อผิดพลาด: ไม่สามารถถอดรหัสไฟล์ได้');
+      return;
     }
+
+    if (!mounted) {
+      return;
+    }
+
+    Navigator.pushReplacementNamed(
+      context,
+      ResultPage.routeName,
+      arguments: {
+        'filePath': outFile.path,
+        'message': 'ถอดรหัสสำเร็จ',
+        'isEncryption': false,
+        'userID': getLog,
+        'fileEncryptPath': _toBeDecryptedFilePath,
+        'signatureCode': null,
+        'type': 'decryption'
+      },
+    );
+  }
+
+  void _showSnackBar(String message) {
+    if (!mounted || message == null || message.isEmpty) {
+      return;
+    }
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(content: Text(message)));
   }
 }
