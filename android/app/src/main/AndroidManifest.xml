@@ -1,5 +1,5 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools">
+    xmlns:tools="http://schemas.android.com/tools" package="package th.mi.navy.navy_encrypt_mobile ">
 
     <!-- ✅ สำหรับเปิด external browser ผ่าน url_launcher -->
     <queries>
