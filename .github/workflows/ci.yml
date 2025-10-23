@@ -26,14 +26,14 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
-
-
       - name: Run unit tests
         run: flutter test --no-pub
 
-      - name: Build Android debug APK
-        run: flutter build apk --debug --no-pub
-
       - name: Build Android release APK
-        run: flutter build apk --release --no-pub
+        run: flutter build apk --release 
+    
+      - name: Build ios release APK
         run: flutter build ios --release 
+
+      - name: Build ipa release APK
+        run: flutter build ipa --release 
