@@ -1,6 +1,4 @@
-ext {
-    kotlin_version = kotlin_version
-}
+def kotlin_version = rootProject.ext.kotlin_version
 def localProperties = new Properties()
 def localPropertiesFile = rootProject.file('local.properties')
 if (localPropertiesFile.exists()) {
@@ -96,7 +94,7 @@ flutter {
 }
 
 dependencies {
-    implementation "org.jetbrains.kotlin:kotlin-stdlib:2.1.10"
+    implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
     implementation platform("com.google.firebase:firebase-bom:34.4.0")
     implementation 'com.google.firebase:firebase-auth'
     implementation 'com.google.android.gms:play-services-auth:20.7.0'
