@@ -36,7 +36,6 @@ import 'package:navy_encrypt/pages/settings/settings_page.dart';
 // import 'package:package_info_plus/package_info_plus.dart';
 import 'package:path/path.dart' as p;
 import 'package:permission_handler/permission_handler.dart';
-import 'package:share_plus/share_plus.dart';
 
 part 'home_page_view.dart';
 
@@ -280,8 +279,7 @@ class HomePageController extends MyState<HomePage> {
       {
         'image': 'assets/images/ic_onedrive_new.png',
         'text': 'OneDrive',
-        // 'onClick': _pickFromOneDrive,
-        'onClick': _handleClickShareButton,
+        'onClick': _pickFromOneDrive,
       },
       {
         'image': 'assets/images/ic_history.png',
@@ -303,22 +301,6 @@ class HomePageController extends MyState<HomePage> {
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
       ..showSnackBar(SnackBar(content: Text(message)));
-  }
-
-  _handleClickShareButton() async {
-    if (await isIpad()) {
-      Share.shareXFiles(
-        [XFile("_filePath")],
-        sharePositionOrigin: Rect.fromLTWH(
-          0,
-          0,
-          screenWidth(context),
-          screenHeight(context) / 2,
-        ),
-      );
-    } else {
-      Share.shareXFiles([XFile("_filePath")]);
-    }
   }
 
   _pickFromFileSystem(BuildContext context) async {
