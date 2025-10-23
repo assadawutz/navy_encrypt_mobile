@@ -207,6 +207,7 @@ class _EncryptionPageController extends MyState<EncryptionPage> {
       );
 
       if (file == null) {
+        _showSnackBar('เกิดข้อผิดพลาด: ไม่สามารถใส่ลายน้ำได้');
         isLoading = false;
         return;
       }

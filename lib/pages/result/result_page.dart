@@ -86,7 +86,9 @@ class _ResultPageController extends MyState<ResultPage> {
     // _fileEncryptPath =
     //     arguments['fileEncryptPath'] ?? arguments['filePath'] as String;
 
-    _fileEncryptPath = arguments['filePath'] as String;
+    final encryptPathArg = arguments['fileEncryptPath'] as String;
+    _fileEncryptPath =
+        (encryptPathArg != null && encryptPathArg.isNotEmpty) ? encryptPathArg : _filePath;
 
     assert(_filePath != null && _filePath.isNotEmpty);
 
