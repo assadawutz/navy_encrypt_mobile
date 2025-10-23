@@ -185,10 +185,6 @@ class _CloudPickerPageController extends MyState<CloudPickerPage> {
           return;
         }
 
-        if (!mounted) {
-          return;
-        }
-
         final size = await file.length();
         if (size > _maxFileSizeInBytes) {
           _showSnackBar('ไฟล์มีขนาดเกิน 20MB');
@@ -237,10 +233,6 @@ class _CloudPickerPageController extends MyState<CloudPickerPage> {
             '$_title file download success. File saved at ${file.path}, $displayFileSize ($displayFileByteSize bytes)');
 
         logOneLineWithBorderDouble('File extension: ${cloudFile.fileExtension}');
-
-        if (!mounted) {
-          return;
-        }
 
         Navigator.pushReplacementNamed(
           context,

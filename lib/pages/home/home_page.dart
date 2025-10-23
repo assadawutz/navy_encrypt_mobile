@@ -36,7 +36,6 @@ import 'package:navy_encrypt/pages/settings/settings_page.dart';
 // import 'package:package_info_plus/package_info_plus.dart';
 import 'package:path/path.dart' as p;
 import 'package:permission_handler/permission_handler.dart';
-import 'package:share_plus/share_plus.dart';
 
 part 'home_page_view.dart';
 
@@ -122,8 +121,7 @@ class HomePageController extends MyState<HomePage> {
         return;
       }
 
-      final extension = p.extension(targetName).toLowerCase();
-      if (extension != '.enc' && !_checkFileExtension(targetName)) {
+      if (!_checkFileExtension(targetName)) {
         return;
       }
 
@@ -172,23 +170,29 @@ class HomePageController extends MyState<HomePage> {
 
   // called from main.dart
   Future<void> handleIntent(String filePath, [List<int> fileBytes]) async {
-    final hasPath = filePath != null && filePath.trim().isNotEmpty;
-    final hasBytes = fileBytes != null && fileBytes.isNotEmpty;
-
-    if (!hasPath && !hasBytes) {
+    if ((filePath == null || filePath.trim().isEmpty) &&
+        (fileBytes == null || fileBytes.isEmpty)) {
       _showSnackBar('ไม่พบไฟล์');
       return;
     }
 
-    Uint8List bytes = hasBytes ? Uint8List.fromList(fileBytes) : null;
+    Uint8List bytes;
+    if (fileBytes != null && fileBytes.isNotEmpty) {
+      bytes = Uint8List.fromList(fileBytes);
+    }
 
-    String resolvedPath = hasPath ? filePath.trim() : null;
-    if ((resolvedPath == null || resolvedPath.isEmpty) && bytes != null) {
+    String resolvedPath = filePath;
+    if (resolvedPath == null || resolvedPath.trim().isEmpty) {
+      if (bytes == null || bytes.isEmpty) {
+        _showSnackBar('ไม่พบไฟล์');
+        return;
+      }
+
       try {
-        final tempFile = await FileUtil.createFileFromBytes(
-          'navy_${DateTime.now().millisecondsSinceEpoch}',
-          bytes,
-        );
+        final baseName = (filePath != null && filePath.trim().isNotEmpty)
+            ? p.basename(filePath.trim())
+            : 'navy_${DateTime.now().millisecondsSinceEpoch}';
+        final tempFile = await FileUtil.createFileFromBytes(baseName, bytes);
         resolvedPath = tempFile?.path;
       } catch (error) {
         _showSnackBar('เกิดข้อผิดพลาด: ${error.toString()}');
@@ -196,59 +200,39 @@ class HomePageController extends MyState<HomePage> {
       }
     }
 
-    if (resolvedPath == null || resolvedPath.isEmpty) {
+    if (resolvedPath == null || resolvedPath.trim().isEmpty) {
       _showSnackBar('ไม่พบไฟล์');
       return;
     }
 
-    File resolvedFile;
     try {
-      resolvedFile = File(resolvedPath);
-      if (!await resolvedFile.exists()) {
-        if (bytes == null || bytes.isEmpty) {
+      final file = File(resolvedPath);
+      if (!await file.exists()) {
+        if (bytes != null && bytes.isNotEmpty) {
+          final tempFile = await FileUtil.createFileFromBytes(
+            p.basename(resolvedPath),
+            bytes,
+          );
+          resolvedPath = tempFile?.path;
+        } else {
           _showSnackBar('ไม่พบไฟล์');
           return;
         }
-
-        final tempFile = await FileUtil.createFileFromBytes(
-          p.basename(resolvedPath),
-          bytes,
-        );
-        resolvedFile = tempFile;
-        resolvedPath = tempFile?.path;
       }
     } catch (error) {
       _showSnackBar('เกิดข้อผิดพลาด: ${error.toString()}');
       return;
     }
 
-    if (resolvedPath == null || resolvedPath.isEmpty) {
+    if (resolvedPath == null || resolvedPath.trim().isEmpty) {
       _showSnackBar('ไม่พบไฟล์');
-      return;
-    }
-
-    try {
-      final fileSize = bytes != null ? bytes.length : await resolvedFile.length();
-      if (fileSize <= 0) {
-        _showSnackBar('ไม่พบไฟล์');
-        return;
-      }
-      if (fileSize > _maxFileSizeInBytes) {
-        _showSnackBar('ไฟล์มีขนาดเกิน 20MB');
-        return;
-      }
-    } catch (error) {
-      _showSnackBar('เกิดข้อผิดพลาด: ${error.toString()}');
       return;
     }
 
     final extension = p.extension(resolvedPath).toLowerCase();
-    if (extension != '.enc' && !_checkFileExtension(resolvedPath)) {
-      return;
-    }
-
-    final routeToGo =
-        extension == '.enc' ? DecryptionPage.routeName : EncryptionPage.routeName;
+    final routeToGo = extension == '.enc'
+        ? DecryptionPage.routeName
+        : EncryptionPage.routeName;
 
     if (!mounted) {
       return;
@@ -317,10 +301,6 @@ class HomePageController extends MyState<HomePage> {
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
       ..showSnackBar(SnackBar(content: Text(message)));
-  }
-
-  _handleClickShareButton() {
-    _showSnackBar('ไม่พบไฟล์');
   }
 
   _pickFromFileSystem(BuildContext context) async {
@@ -433,10 +413,6 @@ class HomePageController extends MyState<HomePage> {
       }
 
       File pickedFile;
-      List<int> pickedBytes;
-      String resolvedPath;
-      String fileNameHint;
-
       if (pickImage) {
         final XFile image =
             await ImagePicker().pickImage(source: ImageSource.gallery);
@@ -445,9 +421,6 @@ class HomePageController extends MyState<HomePage> {
           return;
         }
         pickedFile = File(image.path);
-        resolvedPath = pickedFile.path;
-        pickedBytes = await pickedFile.readAsBytes();
-        fileNameHint = p.basename(resolvedPath);
       } else if (pickVideo) {
         final XFile video =
             await ImagePicker().pickVideo(source: ImageSource.gallery);
@@ -456,12 +429,8 @@ class HomePageController extends MyState<HomePage> {
           return;
         }
         pickedFile = File(video.path);
-        resolvedPath = pickedFile.path;
-        pickedBytes = await pickedFile.readAsBytes();
-        fileNameHint = p.basename(resolvedPath);
       } else {
         final result = await FilePicker.platform.pickFiles(
-          withData: true,
           type: Platform.isWindows ? FileType.custom : FileType.any,
           allowedExtensions: Platform.isWindows
               ? Constants.selectableFileTypeList
@@ -470,108 +439,26 @@ class HomePageController extends MyState<HomePage> {
               : null,
         );
 
-        if (result == null) {
+        if (result == null || result.files.single.path == null) {
           _showSnackBar('ยกเลิกการเลือกไฟล์');
           return;
         }
-
-        final selectedFile = result.files.single;
-        resolvedPath = selectedFile.path;
-        pickedBytes = selectedFile.bytes;
-        fileNameHint = selectedFile.name;
-        if ((fileNameHint == null || fileNameHint.isEmpty) &&
-            resolvedPath != null &&
-            resolvedPath.isNotEmpty) {
-          fileNameHint = p.basename(resolvedPath);
-        }
-
-        if (resolvedPath != null && resolvedPath.trim().isNotEmpty) {
-          pickedFile = File(resolvedPath);
-        } else if (pickedBytes != null && pickedBytes.isNotEmpty) {
-          try {
-            final persistedFile = await FileUtil.createFileFromBytes(
-              (fileNameHint?.isNotEmpty ?? false)
-                  ? fileNameHint
-                  : 'navy_${DateTime.now().millisecondsSinceEpoch}',
-              pickedBytes,
-            );
-            pickedFile = persistedFile;
-            resolvedPath = persistedFile?.path;
-            fileNameHint =
-                resolvedPath != null ? p.basename(resolvedPath) : fileNameHint;
-          } catch (error) {
-            _showSnackBar('เกิดข้อผิดพลาด: ${error.toString()}');
-            return;
-          }
-        } else {
-          _showSnackBar('ยกเลิกการเลือกไฟล์');
-          return;
-        }
+        pickedFile = File(result.files.single.path);
       }
 
-      if (pickedFile == null ||
-          resolvedPath == null ||
-          resolvedPath.trim().isEmpty) {
+      if (pickedFile == null) {
         _showSnackBar('ไม่พบไฟล์');
         return;
       }
 
-      try {
-        final exists = await pickedFile.exists();
-        if (!exists) {
-          if (pickedBytes != null && pickedBytes.isNotEmpty) {
-            try {
-              final persistedFile = await FileUtil.createFileFromBytes(
-                (fileNameHint?.isNotEmpty ?? false)
-                    ? fileNameHint
-                    : 'navy_${DateTime.now().millisecondsSinceEpoch}',
-                pickedBytes,
-              );
-              pickedFile = persistedFile;
-              resolvedPath = persistedFile?.path;
-              fileNameHint = resolvedPath != null
-                  ? p.basename(resolvedPath)
-                  : fileNameHint;
-              if (pickedFile == null ||
-                  resolvedPath == null ||
-                  resolvedPath.trim().isEmpty) {
-                _showSnackBar('ไม่พบไฟล์');
-                return;
-              }
-            } catch (error) {
-              _showSnackBar('เกิดข้อผิดพลาด: ${error.toString()}');
-              return;
-            }
-          } else {
-            _showSnackBar('ไม่พบไฟล์');
-            return;
-          }
-        }
-      } catch (error) {
-        _showSnackBar('เกิดข้อผิดพลาด: ${error.toString()}');
-        return;
-      }
-
-      int size;
-      try {
-        size = pickedBytes?.length ?? await pickedFile.length();
-      } catch (error) {
-        _showSnackBar('เกิดข้อผิดพลาด: ${error.toString()}');
-        return;
-      }
-
-      if (size == null || size <= 0) {
-        _showSnackBar('ไม่พบไฟล์');
-        return;
-      }
-
+      final size = await pickedFile.length();
       if (size > _maxFileSizeInBytes) {
         _showSnackBar('ไฟล์มีขนาดเกิน 20MB');
         return;
       }
 
-      final extension = p.extension(resolvedPath).toLowerCase();
-      if (extension != '.enc' && !_checkFileExtension(resolvedPath)) {
+      final filePath = pickedFile.path;
+      if (!_checkFileExtension(filePath)) {
         return;
       }
 
@@ -579,7 +466,7 @@ class HomePageController extends MyState<HomePage> {
         return;
       }
 
-      handleIntent(resolvedPath, pickedBytes);
+      handleIntent(filePath);
     } catch (error) {
       _showSnackBar('เกิดข้อผิดพลาด: ${error.toString()}');
     }
