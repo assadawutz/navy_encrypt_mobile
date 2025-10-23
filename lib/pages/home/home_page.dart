@@ -280,8 +280,7 @@ class HomePageController extends MyState<HomePage> {
       {
         'image': 'assets/images/ic_onedrive_new.png',
         'text': 'OneDrive',
-        // 'onClick': _pickFromOneDrive,
-        'onClick': _handleClickShareButton,
+        'onClick': _pickFromOneDrive,
       },
       {
         'image': 'assets/images/ic_history.png',
