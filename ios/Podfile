@@ -26,6 +26,29 @@ require File.expand_path(File.join('packages', 'flutter_tools', 'bin', 'podhelpe
 
 flutter_ios_podfile_setup
 
+def ensure_bundle(installer, target_name, deployment_target: '12.0', runpaths: [])
+  installer.aggregate_targets.each do |aggregate_target|
+    aggregate_target.user_targets.each do |user_target|
+      next unless user_target.name == target_name
+
+      user_target.build_configurations.each do |config|
+        config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = deployment_target
+
+        next if runpaths.empty?
+
+        existing = config.build_settings['LD_RUNPATH_SEARCH_PATHS'] || '$(inherited)'
+        existing = Array(existing)
+
+        runpaths.each do |path|
+          existing << path unless existing.include?(path)
+        end
+
+        config.build_settings['LD_RUNPATH_SEARCH_PATHS'] = existing
+      end
+    end
+  end
+end
+
 target 'Runner' do
   use_frameworks! :linkage => :static
   use_modular_headers!
@@ -34,6 +57,14 @@ target 'Runner' do
 end
 
 post_install do |installer|
+  ensure_bundle(installer, 'Runner', deployment_target: '12.0')
+  ensure_bundle(
+    installer,
+    'Share Extension',
+    deployment_target: '12.0',
+    runpaths: ['@executable_path/Frameworks', '@executable_path/../../Frameworks']
+  )
+
   installer.pods_project.targets.each do |target|
     flutter_additional_ios_build_settings(target)
     target.build_configurations.each do |config|

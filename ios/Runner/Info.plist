@@ -24,11 +24,11 @@
 	<string>$(MARKETING_VERSION)</string>
 	<key>CFBundleSignature</key>
 	<string>????</string>
-	<key>CFBundleURLTypes</key>
-	<array>
-		<dict>
-			<key>CFBundleTypeRole</key>
-			<string>Editor</string>
+        <key>CFBundleURLTypes</key>
+        <array>
+                <dict>
+                        <key>CFBundleTypeRole</key>
+                        <string>Editor</string>
 			<key>CFBundleURLSchemes</key>
 			<array>
 				<string>ShareMedia-$(PRODUCT_BUNDLE_IDENTIFIER)</string>
@@ -39,20 +39,73 @@
 			<key>CFBundleTypeRole</key>
 			<string>Editor</string>
 			<key>CFBundleURLSchemes</key>
-			<array>
-				<string>com.googleusercontent.apps.786699358980-qvot4vtonrfcvo9r5jrqhls9to62m3g2</string>
-			</array>
-		</dict>
-	</array>
-	<key>CFBundleVersion</key>
-	<string>$(CURRENT_PROJECT_VERSION)</string>
-	<key>LSApplicationQueriesSchemes</key>
-	<array>
-		<string>https</string>
+                        <array>
+                                <string>com.googleusercontent.apps.786699358980-qvot4vtonrfcvo9r5jrqhls9to62m3g2</string>
+                        </array>
+                </dict>
+        </array>
+        <key>CFBundleDocumentTypes</key>
+        <array>
+                <dict>
+                        <key>CFBundleTypeName</key>
+                        <string>Navy Encrypt Document</string>
+                        <key>LSHandlerRank</key>
+                        <string>Owner</string>
+                        <key>LSItemContentTypes</key>
+                        <array>
+                                <string>th.mi.navy.navy-encrypt.enc</string>
+                        </array>
+                </dict>
+                <dict>
+                        <key>CFBundleTypeName</key>
+                        <string>General Files</string>
+                        <key>LSHandlerRank</key>
+                        <string>Default</string>
+                        <key>LSItemContentTypes</key>
+                        <array>
+                                <string>public.content</string>
+                                <string>public.data</string>
+                        </array>
+                </dict>
+        </array>
+        <key>UTExportedTypeDeclarations</key>
+        <array>
+                <dict>
+                        <key>UTTypeIdentifier</key>
+                        <string>th.mi.navy.navy-encrypt.enc</string>
+                        <key>UTTypeDescription</key>
+                        <string>Navy Encrypt Encrypted File</string>
+                        <key>UTTypeConformsTo</key>
+                        <array>
+                                <string>public.data</string>
+                                <string>public.content</string>
+                        </array>
+                        <key>UTTypeTagSpecification</key>
+                        <dict>
+                                <key>public.filename-extension</key>
+                                <array>
+                                        <string>enc</string>
+                                </array>
+                                <key>public.mime-type</key>
+                                <array>
+                                        <string>application/octet-stream</string>
+                                </array>
+                        </dict>
+                </dict>
+        </array>
+        <key>CFBundleVersion</key>
+        <string>$(CURRENT_PROJECT_VERSION)</string>
+        <key>LSApplicationQueriesSchemes</key>
+        <array>
+                <string>https</string>
 		<string>http</string>
 	</array>
-	<key>LSRequiresIPhoneOS</key>
-	<true/>
+        <key>LSRequiresIPhoneOS</key>
+        <true/>
+        <key>UIFileSharingEnabled</key>
+        <true/>
+        <key>LSSupportsOpeningDocumentsInPlace</key>
+        <true/>
         <key>NSAppTransportSecurity</key>
         <dict>
                 <key>NSAllowsArbitraryLoads</key>
@@ -74,10 +127,12 @@
 	<string>แอปต้องการสิทธิ์ในการเข้าถึงไมโครโฟน เพื่อให้คุณสามารถถ่ายวิดีโอที่มีเสียง แล้วนำวิดีโอมาเข้ารหัสได้</string>
 	<key>NSPhotoLibraryAddUsageDescription</key>
 	<string>แอปต้องการสิทธิ์ในการเข้าถึงคลังภาพ เพื่อให้คุณสามารถบันทึกรูปภาพเก็บไว้ในคลังภาพได้</string>
-	<key>NSPhotoLibraryUsageDescription</key>
-	<string>แอปต้องการสิทธิ์ในการเข้าถึงคลังภาพ เพื่อให้คุณสามารถเลือกรูปภาพมาใส่ลายน้ำและ/หรือเข้ารหัสได้</string>
-	<key>UIApplicationSupportsIndirectInputEvents</key>
-	<true/>
+        <key>NSPhotoLibraryUsageDescription</key>
+        <string>แอปต้องการสิทธิ์ในการเข้าถึงคลังภาพ เพื่อให้คุณสามารถเลือกรูปภาพมาใส่ลายน้ำและ/หรือเข้ารหัสได้</string>
+        <key>NSDocumentsFolderUsageDescription</key>
+        <string>แอปต้องการสิทธิ์ในการเข้าถึงไฟล์ในแอป เพื่อให้คุณสามารถเปิดและจัดการไฟล์ที่เข้ารหัสได้</string>
+        <key>UIApplicationSupportsIndirectInputEvents</key>
+        <true/>
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>fetch</string>
