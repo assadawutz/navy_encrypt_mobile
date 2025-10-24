@@ -1,27 +1,59 @@
 platform :ios, '12.0'
 ENV['COCOAPODS_DISABLE_STATS'] = 'true'
-project 'Runner', { 'Debug' => :debug, 'Profile' => :release, 'Release' => :release }
+
+project 'Runner', {
+  'Debug' => :release,
+  'Profile' => :release,
+  'Release' => :release,
+}
 
 def flutter_root
-  g = File.expand_path(File.join('..','Flutter','Generated.xcconfig'), __FILE__)
-  raise "#{g} must exist. Run 'flutter pub get' first." unless File.exist?(g)
-  File.foreach(g){|l| m=l.match(/FLUTTER_ROOT\=(.*)/); return m[1].strip if m }
-  raise "FLUTTER_ROOT not found."
+  generated_xcode_build_settings_path = File.expand_path(File.join('..', 'Flutter', 'Generated.xcconfig'), __FILE__)
+  unless File.exist?(generated_xcode_build_settings_path)
+    raise "#{generated_xcode_build_settings_path} must exist. Run 'flutter pub get' first."
+  end
+  File.foreach(generated_xcode_build_settings_path) do |line|
+    matches = line.match(/FLUTTER_ROOT\=(.*)/)
+    return matches[1].strip if matches
+  end
+  raise "FLUTTER_ROOT not found in #{generated_xcode_build_settings_path}."
 end
 
-require File.expand_path(File.join(flutter_root,'packages','flutter_tools','bin','podhelper.rb'))
-flutter_ios_podfile_setup if defined?(flutter_ios_podfile_setup)
-install! 'cocoapods', :generate_multiple_pod_projects => false
+require File.expand_path(File.join(flutter_root, 'packages', 'flutter_tools', 'bin', 'podhelper.rb'))
+
+if defined?(flutter_ios_podfile_setup)
+  flutter_ios_podfile_setup
+end
+
+install! 'cocoapods', :deterministic_uuids => false
 
 target 'Runner' do
   use_frameworks! :linkage => :static
   use_modular_headers!
-  flutter_install_all_ios_pods File.dirname(File.realpath(__FILE__))
-  post_install do |installer|
-    installer.pods_project.targets.each do |t|
-      t.build_configurations.each do |c|
-        c.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '12.0'
-        c.build_settings['EXCLUDED_ARCHS[sdk=iphonesimulator*]'] = 'i386'
+
+  if defined?(flutter_install_all_ios_pods)
+    flutter_install_all_ios_pods File.dirname(File.realpath(__FILE__))
+  elsif defined?(install_all_flutter_pods)
+    install_all_flutter_pods File.dirname(File.realpath(__FILE__))
+  else
+    raise 'No flutter pods installer method found.'
+  end
+  # 🚫 ห้ามเพิ่ม: Firebase/Core, Firebase/Messaging, BoringSSL-GRPC, GoogleUtilities, Protobuf, firebase_messaging
+end
+
+post_install do |installer|
+  installer.pods_project.targets.each do |target|
+    if defined?(flutter_additional_ios_build_settings)
+      flutter_additional_ios_build_settings(target)
+    end
+    target.build_configurations.each do |config|
+      config.build_settings['EXCLUDED_ARCHS[sdk=iphonesimulator*]'] = 'arm64'
+      config.build_settings['ENABLE_BITCODE'] = 'NO'
+       config.build_settings['DEVELOPMENT_TEAM'] = 'BA93FUXZ6S'
+
+      deployment_target = config.build_settings['IPHONEOS_DEPLOYMENT_TARGET']
+      if deployment_target && Gem::Version.new(deployment_target) < Gem::Version.new('12.0')
+        config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '12.0'
       end
     end
   end
