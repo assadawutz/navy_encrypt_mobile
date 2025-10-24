@@ -1,0 +1,71 @@
+name: Build iOS IPA with GitHub CLI
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  build-ios-ipa:
+    name: Build unsigned iOS IPA
+    runs-on: macos-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: "3.3.8"
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Install CocoaPods dependencies
+        run: |
+          cd ios
+          pod install
+
+      - name: Build unsigned IPA
+        run: flutter build ipa --no-codesign
+
+      - name: Locate IPA path
+        id: locate-ipa
+        run: |
+          IPA_PATH=$(find build/ios/ipa -name "*.ipa" -print -quit)
+          if [ -z "$IPA_PATH" ]; then
+            echo "Unable to locate IPA artifact" >&2
+            exit 1
+          fi
+          echo "ipa_path=$IPA_PATH" >> "$GITHUB_OUTPUT"
+
+      - name: Upload IPA as workflow artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-ipa
+          path: ${{ steps.locate-ipa.outputs.ipa_path }}
+          if-no-files-found: error
+
+      - name: Publish IPA via GitHub CLI
+        id: publish-release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          IPA_PATH="${{ steps.locate-ipa.outputs.ipa_path }}"
+          TAG="ios-ipa-${{ github.run_id }}"
+          TITLE="Automated iOS IPA build ${{ github.run_id }}"
+          NOTES="Automated unsigned iOS IPA generated from workflow run ${{ github.run_id }}."
+          gh release create "$TAG" "$IPA_PATH#Unsigned iOS IPA" --title "$TITLE" --notes "$NOTES" --target "${{ github.sha }}" --prerelease
+          DOWNLOAD_URL=$(gh release view "$TAG" --json assets --jq '.assets[0].browser_download_url')
+          echo "download_url=$DOWNLOAD_URL" >> "$GITHUB_OUTPUT"
+          echo "IPA Download URL: $DOWNLOAD_URL" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Notify with URL
+        env:
+          DOWNLOAD_URL: ${{ steps.publish-release.outputs.download_url }}
+        run: |
+          echo "The iOS IPA is available at: $DOWNLOAD_URL"
