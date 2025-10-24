@@ -26,7 +26,9 @@ jobs:
         run: flutter pub get
 
       - name: Build unsigned IPA
-        run: flutter build ipa --no-codesign
+        run: flutter build ipa  --no-pub \
+            --build-name "${FLUTTER_BUILD_NAME}" \
+            --export-options-plist "${EXPORT_OPTIONS}"
 
       - name: Locate IPA path
         id: locate-ipa
