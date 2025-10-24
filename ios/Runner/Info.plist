@@ -121,14 +121,14 @@
                         </dict>
                 </dict>
         </dict>
-	<key>NSCameraUsageDescription</key>
-	<string>แอปต้องการสิทธิ์ในการเข้าถึงกล้อง เพื่อให้คุณสามารถถ่ายรูปหรือวิดีโอ แล้วนำมาใส่ลายน้ำและ/หรือเข้ารหัสได้</string>
+        <key>NSCameraUsageDescription</key>
+        <string>Use the camera to scan or capture files</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>แอปต้องการสิทธิ์ในการเข้าถึงไมโครโฟน เพื่อให้คุณสามารถถ่ายวิดีโอที่มีเสียง แล้วนำวิดีโอมาเข้ารหัสได้</string>
-	<key>NSPhotoLibraryAddUsageDescription</key>
-	<string>แอปต้องการสิทธิ์ในการเข้าถึงคลังภาพ เพื่อให้คุณสามารถบันทึกรูปภาพเก็บไว้ในคลังภาพได้</string>
+        <key>NSPhotoLibraryAddUsageDescription</key>
+        <string>Save images or files to the photo library</string>
         <key>NSPhotoLibraryUsageDescription</key>
-        <string>แอปต้องการสิทธิ์ในการเข้าถึงคลังภาพ เพื่อให้คุณสามารถเลือกรูปภาพมาใส่ลายน้ำและ/หรือเข้ารหัสได้</string>
+        <string>Access the photo library to select or save files</string>
         <key>NSDocumentsFolderUsageDescription</key>
         <string>แอปต้องการสิทธิ์ในการเข้าถึงไฟล์ในแอป เพื่อให้คุณสามารถเปิดและจัดการไฟล์ที่เข้ารหัสได้</string>
         <key>UIApplicationSupportsIndirectInputEvents</key>
