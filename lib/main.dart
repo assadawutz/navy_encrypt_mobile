@@ -48,7 +48,10 @@ Future<void> main(List<String> arguments) async {
     DeviceOrientation.portraitUp,
   ]);
 
-  HttpOverrides.global = new MyHttpOverrides();
+  assert(() {
+    HttpOverrides.global = MyHttpOverrides();
+    return true;
+  }());
 
   //#region Firebase
 

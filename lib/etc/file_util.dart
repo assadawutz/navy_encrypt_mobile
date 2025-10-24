@@ -1,13 +1,11 @@
-import 'dart:io';
+import 'dart:io' show Directory, File, Platform;
 import 'dart:typed_data';
 
 import 'package:archive/archive.dart';
-import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:uuid/uuid.dart';
 import 'package:path/path.dart' as p;
-import 'package:permission_handler/permission_handler.dart';
 
 class FileUtil {
   static Future<String> getTempDirPath() async {
@@ -30,6 +28,13 @@ class FileUtil {
 
 
   static Future<String> getImageDirPath() async {
+    if (Platform.isWindows) {
+      final userProfile = Platform.environment['USERPROFILE'];
+      if (userProfile != null && userProfile.isNotEmpty) {
+        return p.join(userProfile, 'Pictures');
+      }
+    }
+
     final appDocDirPath = (await getApplicationDocumentsDirectory()).path;
     return p.join(p.dirname(appDocDirPath), 'Pictures');
   }
@@ -89,11 +94,14 @@ class FileUtil {
   }
 
   static Future<String> getWindowsPicturesPath() async {
-    Directory docDir = await getApplicationDocumentsDirectory();
-    var pathList = docDir.path.split('\\');
-    pathList[pathList.length - 1] = 'Pictures';
-    var picturePath = pathList.join('\\');
-    print(picturePath);
-    return picturePath;
+    if (Platform.isWindows) {
+      final userProfile = Platform.environment['USERPROFILE'];
+      if (userProfile != null && userProfile.isNotEmpty) {
+        return p.join(userProfile, 'Pictures');
+      }
+    }
+
+    final appDocDirPath = (await getApplicationDocumentsDirectory()).path;
+    return p.join(p.dirname(appDocDirPath), 'Pictures');
   }
 }

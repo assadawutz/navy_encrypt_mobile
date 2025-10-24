@@ -445,7 +445,9 @@ class _ResultPageController extends MyState<ResultPage> {
       isLoading = true;
       loadingMessage = 'กำลังบันทึกไฟล์';
 
-      await file.copy(targetPath);
+      final targetFile = File(targetPath);
+      await targetFile.create(recursive: true);
+      await file.openRead().pipe(targetFile.openWrite());
       showOkDialog(
         context,
         'สำเร็จ',
@@ -1029,22 +1031,29 @@ class _ResultPageController extends MyState<ResultPage> {
       try {
         final androidInfo = await DeviceInfoPlugin().androidInfo;
         if (androidInfo.version.sdkInt >= 33) {
-          if (await requestPermission(Permission.photos)) {
-            return true;
-          }
-          if (await requestPermission(Permission.storage)) {
-            return true;
-          }
-          return false;
+          final statuses = await Future.wait([
+            Permission.photos.request(),
+            Permission.videos.request(),
+            Permission.audio.request(),
+          ]);
+          return statuses.any(_isPermissionGranted);
         }
       } catch (_) {
-        // ถ้าอ่านข้อมูลเวอร์ชัน Android ไม่ได้ ให้ fallback ไปใช้ Permission.storage
+        // ถ้าอ่านข้อมูลเวอร์ชัน Android ไม่ได้ ให้ fallback ไปใช้การขอทั้งหมด
+        final statuses = await Future.wait([
+          Permission.photos.request(),
+          Permission.videos.request(),
+          Permission.audio.request(),
+        ]);
+        if (statuses.any(_isPermissionGranted)) {
+          return true;
+        }
       }
 
       return await requestPermission(Permission.storage);
     }
 
-    return await requestPermission(Permission.storage);
+    return true;
   }
 
   Future<File> _resolveResultFile() async {

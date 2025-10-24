@@ -2,8 +2,8 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-	<key>AppGroupId</key>
-	<string>$(CUSTOM_GROUP_ID)</string>
+        <key>AppGroupId</key>
+        <string>group.th.mi.navy.navy-encrypt</string>
 	<key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>
 	<key>CFBundleDevelopmentRegion</key>
@@ -53,11 +53,21 @@
 	</array>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
-	<key>NSAppTransportSecurity</key>
-	<dict>
-		<key>NSAllowsArbitraryLoads</key>
-		<true/>
-	</dict>
+        <key>NSAppTransportSecurity</key>
+        <dict>
+                <key>NSAllowsArbitraryLoads</key>
+                <false/>
+                <key>NSExceptionDomains</key>
+                <dict>
+                        <key>navenc.navy.mi.th</key>
+                        <dict>
+                                <key>NSIncludesSubdomains</key>
+                                <true/>
+                                <key>NSTemporaryExceptionAllowsInsecureHTTPLoads</key>
+                                <false/>
+                        </dict>
+                </dict>
+        </dict>
 	<key>NSCameraUsageDescription</key>
 	<string>แอปต้องการสิทธิ์ในการเข้าถึงกล้อง เพื่อให้คุณสามารถถ่ายรูปหรือวิดีโอ แล้วนำมาใส่ลายน้ำและ/หรือเข้ารหัสได้</string>
 	<key>NSMicrophoneUsageDescription</key>
@@ -83,8 +93,8 @@
 	<array>
 		<string>UIInterfaceOrientationPortrait</string>
 	</array>
-	<key>UISupportsDocumentBrowser</key>
-	<true/>
+        <key>UISupportsDocumentBrowser</key>
+        <false/>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<false/>
 </dict>

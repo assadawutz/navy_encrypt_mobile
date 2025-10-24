@@ -3,7 +3,7 @@ description: A new Flutter application.
 
 version: 4.1.1+4
 environment:
-  sdk: ">=2.10.0 <3.0.0"  # Flutter 3.3.8 ใช้ Dart 2.18.x
+  sdk: ">=3.3.0 <4.0.0"
 
 dependencies:
   flutter:
@@ -45,7 +45,7 @@ dependencies:
   # -----------------------
   path_provider: ^2.0.11
   path: ^1.8.2
-  file_picker: ^5.2.5
+  file_picker: ^6.2.0
   open_file: ^3.2.1
   #  image_gallery_saver: ^1.7.1
   image_gallery_saver_plus: ^3.0.3
@@ -71,7 +71,7 @@ dependencies:
   universal_html: ^1.2.1
   provider: ^6.0.1
   url_launcher: ^6.1.10
-  permission_handler: ^10.2.0
+  permission_handler: ^11.3.0
   is_first_run: ^1.0.0
   cupertino_icons: ^1.0.2
   flutter_breadcrumb: ^1.0.1

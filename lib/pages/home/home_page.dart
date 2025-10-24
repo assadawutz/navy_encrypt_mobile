@@ -3,9 +3,8 @@ library home_page;
 import 'dart:io' show Directory, File, FileSystemEntity, Platform;
 import 'dart:typed_data';
 
+import 'package:device_info_plus/device_info_plus.dart';
 import 'package:file_picker/file_picker.dart';
-// import 'package:file_picker_cross/file_picker_cross.dart';
-// import 'package:file_picker_cross/file_picker_cross.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -63,6 +62,7 @@ class HomePageController extends MyState<HomePage> {
   HomePageController(this.filePath);
 
   static const int _maxFileSizeInBytes = 20 * 1024 * 1024;
+  int? _cachedAndroidSdkInt;
 
   @override
   Widget build(BuildContext context) {
@@ -91,13 +91,9 @@ class HomePageController extends MyState<HomePage> {
 
   Future<void> _pickFile(BuildContext context) async {
     try {
-      final status = await Permission.storage.request();
-      if (!status.isGranted) {
-        _showSnackBar('ยกเลิกการเลือกไฟล์');
-        return;
-      }
-
-      final result = await FilePicker.platform.pickFiles(withData: true);
+      final result = await FilePicker.platform.pickFiles(
+        withData: Platform.isIOS || Platform.isAndroid,
+      );
       if (result == null) {
         _showSnackBar('ยกเลิกการเลือกไฟล์');
         return;
@@ -299,6 +295,52 @@ class HomePageController extends MyState<HomePage> {
       ..showSnackBar(SnackBar(content: Text(message)));
   }
 
+  bool _isPermissionGranted(PermissionStatus status) {
+    return status.isGranted || status.isLimited;
+  }
+
+  Future<int?> _resolveAndroidSdkInt() async {
+    if (!Platform.isAndroid) {
+      return null;
+    }
+    if (_cachedAndroidSdkInt != null) {
+      return _cachedAndroidSdkInt;
+    }
+    try {
+      final info = await DeviceInfoPlugin().androidInfo;
+      _cachedAndroidSdkInt = info.version.sdkInt;
+      return _cachedAndroidSdkInt;
+    } catch (error) {
+      debugPrint('⚠️ อ่าน Android SDK ไม่สำเร็จ: $error');
+      return null;
+    }
+  }
+
+  Future<bool> _ensureAndroidMediaPermissions({
+    bool pickImage = false,
+    bool pickVideo = false,
+  }) async {
+    if (!Platform.isAndroid) {
+      return true;
+    }
+
+    final sdkInt = await _resolveAndroidSdkInt();
+    if (sdkInt != null && sdkInt >= 33) {
+      final statuses = <PermissionStatus>[];
+      if (pickImage || (!pickVideo)) {
+        statuses.add(await Permission.photos.request());
+      }
+      if (pickVideo || (!pickImage)) {
+        statuses.add(await Permission.videos.request());
+      }
+      statuses.add(await Permission.audio.request());
+      return statuses.any(_isPermissionGranted);
+    }
+
+    final storageStatus = await Permission.storage.request();
+    return _isPermissionGranted(storageStatus);
+  }
+
   _pickFromFileSystem(BuildContext context) async {
     logOneLineWithBorderDouble(await FileUtil.getImageDirPath());
 
@@ -364,7 +406,9 @@ class HomePageController extends MyState<HomePage> {
       {bool pickImage = false, bool pickVideo = false}) async {
     File _file;
 
-    FilePickerResult result = await FilePicker.platform.pickFiles();
+    FilePickerResult result = await FilePicker.platform.pickFiles(
+      withData: Platform.isIOS || Platform.isAndroid,
+    );
 
     if (result != null) {
       final file = File(result.files.single.path);
@@ -392,19 +436,14 @@ class HomePageController extends MyState<HomePage> {
     }
 
     try {
-      if (Platform.isAndroid == true) {
-        await requestStoragePermission();
-        final permissionPhotos = Permission.photos;
-        final permissionAudio = Permission.audio;
-        final permissionCamera = Permission.camera;
-        if (await permissionPhotos.isDenied) {
-          await permissionPhotos.request();
-        }
-        if (await permissionAudio.isDenied) {
-          await permissionAudio.request();
-        }
-        if (await permissionCamera.isDenied) {
-          await permissionCamera.request();
+      if (Platform.isAndroid) {
+        final granted = await _ensureAndroidMediaPermissions(
+          pickImage: pickImage,
+          pickVideo: pickVideo,
+        );
+        if (!granted) {
+          _showSnackBar('ไม่สามารถเข้าถึงไฟล์สื่อได้');
+          return;
         }
       }
 
@@ -433,6 +472,7 @@ class HomePageController extends MyState<HomePage> {
                   .map((e) => e.fileExtension)
                   .toList()
               : null,
+          withData: Platform.isIOS || Platform.isAndroid,
         );
 
         if (result == null || result.files.single.path == null) {
@@ -466,22 +506,6 @@ class HomePageController extends MyState<HomePage> {
     } catch (error) {
       _showSnackBar('เกิดข้อผิดพลาด: ${error.toString()}');
     }
-  }
-
-  Future<bool> requestStoragePermission() async {
-    if (Platform.isAndroid) {
-      if (Platform.version.compareTo('33') >= 0) {
-        // Android 13+
-        var imagePerm = await Permission.photos.request();
-        var videoPerm = await Permission.videos.request();
-        return imagePerm.isGranted || videoPerm.isGranted;
-      } else {
-        // Android 12-
-        var storagePerm = await Permission.storage.request();
-        return storagePerm.isGranted;
-      }
-    }
-    return true;
   }
 
   // void _openSystemPicker(BuildContext context) async {
