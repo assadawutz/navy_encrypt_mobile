@@ -226,8 +226,13 @@ class _SettingsPageController extends MyState<SettingsPage> {
     } else if (Platform.isWindows) {
       WindowsDeviceInfo info = await deviceInfo.windowsInfo;
       deviceOs = 'Windows';
-      deviceName = info.computerName;
+      deviceName = (info.computerName?.trim().isEmpty ?? true)
+          ? 'Windows Device'
+          : info.computerName;
+      deviceId = await MyPrefs.getOrCreateDeviceId();
     }
+
+    deviceId ??= await MyPrefs.getOrCreateDeviceId();
 
     showError(null, null, null);
     dismissKeyboard(dialogContext);

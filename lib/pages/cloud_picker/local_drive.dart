@@ -99,12 +99,28 @@ class LocalDrive extends CloudDrive {
   }
 
   Future<String> _getUploadFileFullPath(CloudFile folder) async {
-    DateTime now = DateTime.now();
-    String formattedDate = DateFormat('yyyy-MM-dd–kk:mm:ss:ss-').format(now);
-    final dirPath =
-        await '$_rootDirPath${folder.id == 'root' ? '' : folder.id}';
-    print("${formattedDate}${p.basename(_fileToUpload.path)}");
-    return '$dirPath/${formattedDate}${p.basename(_fileToUpload.path)}';
+    final now = DateTime.now();
+    final timestamp = DateFormat('yyyyMMdd_HHmmss').format(now);
+    final dirPath = '$_rootDirPath${folder.id == 'root' ? '' : folder.id}';
+    final sanitizedName = _sanitizeFileName(p.basename(_fileToUpload.path));
+    final uniqueName = '${timestamp}_$sanitizedName';
+    print(uniqueName);
+    return p.join(dirPath, uniqueName);
+  }
+
+  String _sanitizeFileName(String fileName) {
+    final disallowedCharacters = RegExp(r'[<>:"/\\|?*]');
+    var sanitized = fileName.replaceAll(disallowedCharacters, '_');
+    sanitized = sanitized.trim();
+    while (sanitized.isNotEmpty &&
+        (sanitized.endsWith(' ') || sanitized.endsWith('.'))) {
+      sanitized = sanitized.substring(0, sanitized.length - 1);
+    }
+    if (sanitized.isEmpty) {
+      final extension = p.extension(fileName);
+      return extension.isNotEmpty ? 'file$extension' : 'file';
+    }
+    return sanitized;
   }
 
   @override
