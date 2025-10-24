@@ -44,6 +44,9 @@ android {
         versionName flutterVersionName
         multiDexEnabled true
         versionNameSuffix '5'
+        vectorDrawables {
+            useSupportLibrary true
+        }
     }
 
     signingConfigs {
@@ -54,13 +57,12 @@ android {
                 storeFile keystoreProperties['storeFile'] ? file(keystoreProperties['storeFile']) : null
                 storePassword keystoreProperties['storePassword']
             }
-
         }
     }
 
     buildTypes {
         release {
-            signingConfig signingConfigs.release
+            signingConfig keystorePropertiesFile.exists() ? signingConfigs.release : signingConfigs.debug
 
         }
     }
@@ -78,10 +80,17 @@ android {
     buildFeatures {
         viewBinding true
     }
-    viewBinding {
-        enabled true
+    packagingOptions {
+        resources {
+            excludes += [
+                    'META-INF/LICENSE',
+                    'META-INF/LICENSE.txt',
+                    'META-INF/NOTICE',
+                    'META-INF/NOTICE.txt'
+            ]
+        }
     }
-    buildToolsVersion '35.0.0'
+    buildToolsVersion '34.0.0'
 }
 
 flutter {
