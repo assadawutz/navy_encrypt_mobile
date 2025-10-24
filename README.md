@@ -22,8 +22,11 @@
 ## Configuration and secrets
 
 1. Copy `.env.example` to `.env` and replace each value with production-ready
-   secrets. The file is loaded at runtime and also used by the Android Gradle
-   scripts when local environment variables are unavailable.
+   secrets. The file is consumed only by native build tooling (Gradle,
+   PowerShell, etc.) and **must not** be bundled with the Flutter application.
+   Pass runtime configuration such as `APP_DISPLAY_NAME` via
+   `--dart-define=KEY=VALUE` when invoking `flutter run`/`flutter build` or by
+   exporting real environment variables on desktop builds.
 2. Provide a signing keystore when creating release builds:
    - **CI** – Add `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`,
      `ANDROID_KEY_ALIAS`, and `ANDROID_KEY_PASSWORD` secrets. The workflow
