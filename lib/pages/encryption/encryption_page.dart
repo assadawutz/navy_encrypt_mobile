@@ -13,7 +13,7 @@ import 'package:navy_encrypt/common/my_form_field.dart';
 import 'package:navy_encrypt/common/my_state.dart';
 import 'package:navy_encrypt/common/widget_view.dart';
 import 'package:navy_encrypt/etc/constants.dart';
-import 'package:navy_encrypt/etc/file_util.dart';
+import 'package:navy_encrypt/core/crypto_flow.dart';
 import 'package:navy_encrypt/etc/utils.dart';
 import 'package:navy_encrypt/models/loading_message.dart';
 import 'package:navy_encrypt/navy_encryption/algorithms/base_algorithm.dart';
@@ -88,13 +88,6 @@ class _EncryptionPageController extends MyState<EncryptionPage> {
     });
   }
 
-  Future<String> _createCopy(String filePath) async {
-    final uniqueTempDirPath = (await FileUtil.createUniqueTempDir()).path;
-    final newFilePath = '${uniqueTempDirPath}/${p.basename(filePath)}';
-    final newFile = await File(filePath).copy(newFilePath);
-    return newFile.path;
-  }
-
   Future<void> _handleClickGoButton() async {
     final trimmedWatermark = _watermarkEditingController.text.trim();
     final trimmedPassword = _passwordEditingController.text.trim();
@@ -106,7 +99,7 @@ class _EncryptionPageController extends MyState<EncryptionPage> {
     }
 
     if (_algorithm.code != Navec.notEncryptCode && trimmedPassword.isEmpty) {
-      _showSnackBar('ต้องกรอกรหัสผ่านก่อนเข้ารหัส');
+      _showSnackBar('ต้องกรอกรหัสผ่าน่อนเข้ารหัส');
       return;
     }
 
@@ -141,7 +134,7 @@ class _EncryptionPageController extends MyState<EncryptionPage> {
         return;
       }
 
-      if (originalSize > _maxFileSizeInBytes) {
+      if (originalSize > CryptoFlow.maxFileSizeInBytes) {
         _showSnackBar('ไฟล์มีขนาดเกิน 20MB');
         return;
       }
@@ -152,38 +145,18 @@ class _EncryptionPageController extends MyState<EncryptionPage> {
 
     FocusScope.of(context).unfocus();
 
-    var doWatermark = false;
-    var doEncrypt = false;
+    isLoading = true;
     String signatureCode;
     String uuid;
     File processedFile;
-
-    isLoading = true;
-
-    try {
-      processedFile = File(await _createCopy(_toBeEncryptedFilePath));
-    } catch (error) {
-      isLoading = false;
-      _showSnackBar('เกิดข้อผิดพลาด: ${error.toString()}');
-      return;
-    }
+    CryptoFlowResult flowResult;
 
     final email = await MyPrefs.getEmail();
     final secret = await MyPrefs.getSecret();
 
-    Future<File> renameWithPattern(File file, String prefix, String extension) async {
-      final directory = p.dirname(file.path);
-      final timestamp = DateTime.now().millisecondsSinceEpoch;
-      final targetPath =
-          p.join(directory, '${prefix}_${timestamp}${extension ?? p.extension(file.path)}');
-      return file.rename(targetPath);
-    }
-
     try {
       if (trimmedWatermark.isNotEmpty) {
-        doWatermark = true;
         loadingMessage = 'กำลังใส่ลายน้ำ';
-
         try {
           signatureCode = await MyApi().getWatermarkSignatureCode(email, secret);
         } catch (error) {
@@ -191,76 +164,60 @@ class _EncryptionPageController extends MyState<EncryptionPage> {
           isLoading = false;
           return;
         }
-
         signatureCode ??= trimmedWatermark;
-
-        final watermarkedFile = await Navec.addWatermark(
-          context: context,
-          filePath: processedFile.path,
-          message: trimmedWatermark,
-          email: email ?? '',
-          signatureCode: signatureCode,
-        );
-
-        if (watermarkedFile == null) {
-          _showSnackBar('เกิดข้อผิดพลาด: ไม่สามารถใส่ลายน้ำได้');
-          isLoading = false;
-          return;
-        }
-
-        processedFile = await renameWithPattern(
-          watermarkedFile,
-          'file_watermarked',
-          p.extension(watermarkedFile.path),
-        );
       }
 
       if (_algorithm.code != Navec.notEncryptCode) {
-        doEncrypt = true;
+        Provider.of<LoadingMessage>(context, listen: false)
+            .setMessage('กำลังเข้ารหัส');
         final refCode = await MyPrefs.getRefCode();
         uuid = await MyApi().getUuid(refCode);
-
         if (uuid == null || uuid.trim().isEmpty) {
           _showSnackBar('ไม่สามารถเข้ารหัสได้');
           isLoading = false;
           return;
         }
-
-        Provider.of<LoadingMessage>(context, listen: false)
-            .setMessage('กำลังเข้ารหัส');
-
-        final encryptedFile = await Navec.encryptFile(
-          filePath: processedFile.path,
-          password: trimmedPassword,
-          algo: _algorithm,
-          uuid: uuid,
-        );
-
-        if (encryptedFile == null) {
-          _showSnackBar('เกิดข้อผิดพลาด: ไม่สามารถเข้ารหัสไฟล์ได้');
-          isLoading = false;
-          return;
-        }
-
-        processedFile = await renameWithPattern(
-          encryptedFile,
-          'file_encrypted',
-          '.${Navec.encryptedFileExtension}',
-        );
       }
-    } catch (error) {
-      _showSnackBar('เกิดข้อผิดพลาด: ${error.toString()}');
-      isLoading = false;
-      return;
-    }
 
-    String getLog;
-    try {
+      flowResult = await CryptoFlow.processEncryption(
+        context: context,
+        sourcePath: _toBeEncryptedFilePath,
+        algorithm: _algorithm,
+        password: trimmedPassword,
+        watermarkMessage: trimmedWatermark,
+        email: email,
+        signatureCode: signatureCode,
+        uuid: uuid,
+      );
+
+      processedFile = flowResult.file;
+      if (processedFile == null) {
+        throw StateError('ไม่พบไฟล์ผลลัพธ์');
+      }
+
+      processedFile = await _renameProcessedFile(processedFile, flowResult);
+      flowResult = CryptoFlowResult(
+        file: processedFile,
+        encrypted: flowResult.encrypted,
+        watermarked: flowResult.watermarked,
+        uuid: flowResult.uuid,
+        signatureCode: flowResult.signatureCode,
+      );
+
+      String getLog;
       if (processedFile != null) {
         final fileName = p.basename(processedFile.path);
-        final type = doEncrypt ? 'encryption' : 'watermark';
-        final logId = await MyApi()
-            .saveLog(email, fileName, uuid, signatureCode, 'create', type, secret, null);
+        final type = flowResult.encrypted ? 'encryption' : 'watermark';
+        final logId = await MyApi().saveLog(
+          email,
+          fileName,
+          flowResult.uuid,
+          flowResult.signatureCode,
+          'create',
+          type,
+          secret,
+          null,
+        );
         if (logId == null) {
           _showSnackBar('ไม่สามารถบันทึกข้อมูลได้');
           isLoading = false;
@@ -268,37 +225,53 @@ class _EncryptionPageController extends MyState<EncryptionPage> {
         }
         getLog = logId.toString();
       }
+
+      isLoading = false;
+
+      var message = flowResult.watermarked ? 'ใส่ลายน้ำ' : '';
+      if (flowResult.encrypted) {
+        message = '${message.isEmpty ? '' : '$messageและ'}เข้ารหัส';
+      }
+      if (message.isEmpty) {
+        message = 'ประมวลผล';
+      }
+      message = '$messageสำเร็จ';
+
+      if (!mounted) {
+        return;
+      }
+
+      Navigator.pushReplacementNamed(
+        context,
+        ResultPage.routeName,
+        arguments: flowResult.toArguments(
+          message: message,
+          userId: getLog,
+          type: flowResult.encrypted ? 'encryption' : 'watermark',
+        ),
+      );
     } catch (error) {
       _showSnackBar('เกิดข้อผิดพลาด: ${error.toString()}');
       isLoading = false;
-      return;
     }
+  }
 
-    isLoading = false;
-
-    var message = doWatermark ? 'ใส่ลายน้ำ' : '';
-    if (doEncrypt) {
-      message = '${message.isEmpty ? '' : '$messageและ'}เข้ารหัส';
+  Future<File> _renameProcessedFile(File file, CryptoFlowResult result) async {
+    if (file == null) {
+      return null;
     }
-    message = '$messageสำเร็จ';
-
-    if (!mounted) {
-      return;
+    final directory = p.dirname(file.path);
+    final timestamp = DateTime.now().millisecondsSinceEpoch;
+    if (result.encrypted) {
+      final targetPath = p.join(directory, 'file_encrypted_\${timestamp}.${Navec.encryptedFileExtension}');
+      return file.rename(targetPath);
     }
-
-    Navigator.pushReplacementNamed(
-      context,
-      ResultPage.routeName,
-      arguments: {
-        'filePath': processedFile.path,
-        'message': message,
-        'userID': getLog,
-        'isEncryption': doEncrypt,
-        'fileEncryptPath': processedFile.path,
-        'signatureCode': signatureCode,
-        'type': doEncrypt ? 'encryption' : 'watermark'
-      },
-    );
+    if (result.watermarked) {
+      final targetPath = p.join(directory, 'file_watermarked_\${timestamp}${p.extension(file.path)}');
+      return file.rename(targetPath);
+    }
+    final targetPath = p.join(directory, 'file_processed_\${timestamp}${p.extension(file.path)}');
+    return file.rename(targetPath);
   }
 
   _handleChangeAlgorithm(BaseAlgorithm algo) {

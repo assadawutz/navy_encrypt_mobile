@@ -9,7 +9,7 @@ if (localPropertiesFile.exists()) {
 
 def flutterRoot = localProperties.getProperty('flutter.sdk')
 if (flutterRoot == null) {
-    throw  GradleException("Flutter SDK not found. Define location with flutter.sdk in the local.properties file.")
+    throw GradleException("Flutter SDK not found. Define location with flutter.sdk in the local.properties file.")
 }
 
 def flutterVersionCode = localProperties.getProperty('flutter.versionCode')
@@ -31,10 +31,12 @@ if (keystorePropertiesFile.exists()) {
 apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
 apply from: "$flutterRoot/packages/flutter_tools/gradle/flutter.gradle"
+apply plugin: 'com.google.gms.google-services'
 
 android {
     namespace "th.mi.navy.navy_encrypt"
     compileSdkVersion 34
+    buildToolsVersion '34.0.0'
 
     defaultConfig {
         applicationId "th.mi.navy.navy_encrypt"
@@ -43,7 +45,7 @@ android {
         versionCode flutterVersionCode.toInteger()
         versionName flutterVersionName
         multiDexEnabled true
-        versionNameSuffix '5'
+        vectorDrawables.useSupportLibrary = true
     }
 
     signingConfigs {
@@ -54,14 +56,19 @@ android {
                 storeFile keystoreProperties['storeFile'] ? file(keystoreProperties['storeFile']) : null
                 storePassword keystoreProperties['storePassword']
             }
-
         }
     }
 
     buildTypes {
+        debug {
+            applicationIdSuffix ".debug"
+        }
         release {
-            signingConfig signingConfigs.release
-
+            if (keystorePropertiesFile.exists()) {
+                signingConfig signingConfigs.release
+            }
+            shrinkResources false
+            minifyEnabled false
         }
     }
 
@@ -78,10 +85,16 @@ android {
     buildFeatures {
         viewBinding true
     }
-    viewBinding {
-        enabled true
+
+    packagingOptions {
+        resources {
+            excludes += ['META-INF/LICENSE*', 'META-INF/NOTICE*']
+        }
     }
-    buildToolsVersion '34.0.0'
+
+    lint {
+        checkReleaseBuilds false
+    }
 }
 
 flutter {
@@ -93,7 +106,7 @@ dependencies {
     implementation platform("com.google.firebase:firebase-bom:34.4.0")
     implementation 'com.google.firebase:firebase-auth'
     implementation 'com.google.android.gms:play-services-auth:20.7.0'
+    implementation 'androidx.core:core-ktx:1.12.0'
     implementation 'androidx.multidex:multidex:2.0.1'
 }
-
 apply plugin: 'com.google.gms.google-services'

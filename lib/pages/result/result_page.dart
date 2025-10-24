@@ -4,7 +4,6 @@ import 'dart:convert';
 import 'dart:io';
 
 import "package:collection/collection.dart";
-import 'package:device_info_plus/device_info_plus.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
@@ -20,6 +19,7 @@ import 'package:navy_encrypt/common/my_state.dart';
 import 'package:navy_encrypt/common/widget_view.dart';
 import 'package:navy_encrypt/etc/constants.dart';
 import 'package:navy_encrypt/etc/file_util.dart';
+import 'package:navy_encrypt/core/perm_guard.dart';
 import 'package:navy_encrypt/etc/utils.dart';
 import 'package:navy_encrypt/models/my_file_type.dart';
 import 'package:navy_encrypt/models/share_log.dart';
@@ -33,11 +33,10 @@ import 'package:navy_encrypt/pages/cloud_picker/onedrive.dart';
 import 'package:navy_encrypt/pages/encryption/encryption_page.dart';
 import 'package:navy_encrypt/services/api.dart';
 import 'package:navy_encrypt/storage/prefs.dart';
-import 'package:open_file/open_file.dart';
+import 'package:open_filex/open_filex.dart';
 import 'package:path/path.dart' as p;
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
-import 'package:permission_handler/permission_handler.dart';
 import 'package:printing/printing.dart';
 import 'package:share_plus/share_plus.dart';
 
@@ -579,7 +578,7 @@ class _ResultPageController extends MyState<ResultPage> {
     }
 
     try {
-      final result = await OpenFile.open(file.path);
+      final result = await OpenFilex.open(file.path);
       if (result.type == ResultType.noAppToOpen) {
         _showSnackBar('ไม่พบแอปที่ใช้เปิดไฟล์ประเภทนี้');
       }
@@ -1000,51 +999,8 @@ class _ResultPageController extends MyState<ResultPage> {
         0;
   }
 
-  bool _isPermissionGranted(PermissionStatus status) {
-    if (status == null) {
-      return false;
-    }
-    return status.isGranted || status.isLimited;
-  }
-
   Future<bool> _ensureMediaPermission() async {
-    if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
-      return true;
-    }
-
-    Future<bool> requestPermission(Permission permission) async {
-      final currentStatus = await permission.status;
-      if (_isPermissionGranted(currentStatus)) {
-        return true;
-      }
-      final result = await permission.request();
-      return _isPermissionGranted(result);
-    }
-
-    if (Platform.isIOS) {
-      return await requestPermission(Permission.photos);
-    }
-
-    if (Platform.isAndroid) {
-      try {
-        final androidInfo = await DeviceInfoPlugin().androidInfo;
-        if (androidInfo.version.sdkInt >= 33) {
-          if (await requestPermission(Permission.photos)) {
-            return true;
-          }
-          if (await requestPermission(Permission.storage)) {
-            return true;
-          }
-          return false;
-        }
-      } catch (_) {
-        // ถ้าอ่านข้อมูลเวอร์ชัน Android ไม่ได้ ให้ fallback ไปใช้ Permission.storage
-      }
-
-      return await requestPermission(Permission.storage);
-    }
-
-    return await requestPermission(Permission.storage);
+    return await PermGuard.ensureMediaWriteAccess();
   }
 
   Future<File> _resolveResultFile() async {

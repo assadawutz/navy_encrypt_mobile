@@ -1,0 +1,64 @@
+name: Release Smoke
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  ios:
+    name: iOS Simulator Build
+    runs-on: macos-13
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.3.8'
+          channel: 'stable'
+      - name: Flutter doctor
+        run: flutter doctor -v
+      - name: Fetch packages
+        run: flutter pub get
+      - name: Analyze
+        run: flutter analyze
+      - name: Build iOS simulator
+        run: flutter build ios --simulator --no-codesign
+
+  android:
+    name: Android Release APK
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.3.8'
+          channel: 'stable'
+      - name: Flutter doctor
+        run: flutter doctor -v
+      - name: Fetch packages
+        run: flutter pub get
+      - name: Analyze
+        run: flutter analyze
+      - name: Build release APK
+        run: flutter build apk --release
+
+  windows:
+    name: Windows Desktop Build
+    runs-on: windows-2022
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.3.8'
+          channel: 'stable'
+      - name: Enable Windows desktop
+        run: flutter config --enable-windows-desktop
+      - name: Flutter doctor
+        run: flutter doctor -v
+      - name: Fetch packages
+        run: flutter pub get
+      - name: Analyze
+        run: flutter analyze
+      - name: Build Windows
+        run: flutter build windows

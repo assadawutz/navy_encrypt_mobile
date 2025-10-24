@@ -3,7 +3,7 @@ description: A new Flutter application.
 
 version: 4.1.1+4
 environment:
-  sdk: ">=2.10.0 <3.0.0"  # Flutter 3.3.8 ใช้ Dart 2.18.x
+  sdk: ">=2.18.0 <3.0.0"
 
 dependencies:
   flutter:
@@ -12,20 +12,20 @@ dependencies:
   # -----------------------
   # Desktop
   # -----------------------
-  desktop_window: ^0.4.2      # ปรับขนาด window บน desktop
+  desktop_window: ^0.4.2
 
   # -----------------------
   # UI / Icons / Fonts
   # -----------------------
-  flutter_icons: ^1.1.0       # สร้าง app icon
-  google_fonts: ^2.3.1        # เวอร์ชันที่รองรับ Dart 2.18
+  flutter_icons: ^1.1.0
+  google_fonts: ^2.3.1
   line_icons: ^2.0.1
   font_awesome_flutter: ^9.1.0
 
   # -----------------------
   # UI Components
   # -----------------------
-  modal_bottom_sheet: ^2.1.2  # ⚠️ downgraded เพราะ 3.x ต้อง Dart >=3.3
+  modal_bottom_sheet: ^2.1.2
   photo_view: ^0.12.0
   page_transition: ^2.0.4
   multi_select_flutter: ^4.1.3
@@ -34,11 +34,11 @@ dependencies:
   # -----------------------
   # Networking / HTTP / API
   # -----------------------
-  http: ^0.13.5                # ⚠️ downgradedจาก >=0.13.6
+  http: ^0.13.5
   mime: ^1.0.2
   mime_type: ^1.0.0
   oauth2: ^2.0.1
-  googleapis: ^9.0.0           # เวอร์ชันรองรับ Dart 2.18
+  googleapis: ^9.0.0
 
   # -----------------------
   # Storage / File
@@ -46,98 +46,44 @@ dependencies:
   path_provider: ^2.0.11
   path: ^1.8.2
   file_picker: ^5.2.5
-  open_file: ^3.2.1
-  #  image_gallery_saver: ^1.7.1
+  open_filex: ^4.4.0
   image_gallery_saver_plus: ^3.0.3
-
-
   icloud_storage: ^0.2.1
   shared_preferences: ^2.0.15
-  flutter_secure_storage: ^5.0.2 # ⚠️ downgradedจาก 9.x
+  flutter_secure_storage: ^5.0.2
 
   # -----------------------
   # Sharing / Social
   # -----------------------
-  share_plus: ^6.3.4           # ⚠️ downgradedจาก 7.x → ใช้ shareXFiles ได้
+  share_plus: ^6.3.4
   receive_sharing_intent: ^1.4.5
   google_sign_in: ^5.4.2
   flutter_signin_button: ^2.0.0
   flutter_web_auth: ^0.4.1
 
-
-  # ⚠️ downgradedจาก 3.0.7 → รองรับ crypto ^2.1.x
   archive: ^3.4.2
   image: ^3.0.5
   universal_html: ^1.2.1
   provider: ^6.0.1
   url_launcher: ^6.1.10
   permission_handler: ^10.2.0
+  device_info_plus: ^8.2.2
   is_first_run: ^1.0.0
   cupertino_icons: ^1.0.2
   flutter_breadcrumb: ^1.0.1
   cached_network_image: ^3.1.0
-
-  # -----------------------
-  # Utilities / Others
-  # -----------------------
   uuid: ^4.1.0
   encrypt: ^5.0.0
   intl: ^0.17.0
-  # -----------------------
-  # Firebase
-  # -----------------------
-  #  firebase_auth: ^3.4.0
-  device_info_plus: ^8.2.2
   image_picker: ^1.0.2
 
-# The following section is specific to Flutter.
 flutter:
-
-  # The following line ensures that the Material Icons font is
-  # included with your application, so that you can use the icons in
-  # the material Icons class.
   uses-material-design: true
 
-  # mdpi        1.0x
-  # hdpi        1.5x
-  # xhdpi       2.0x
-  # xxhdpi      3.0x
-  # xxxhdpi     4.0x
-
-  # To add assets to your application, add an assets section, like this:
   assets:
     - assets/images/
     - assets/images/win/
     - assets/images/logos/
-
-  #   - images/a_dot_burr.jpeg
-  #   - images/a_dot_ham.jpeg
-
-  # An image asset can refer to one or more resolution-specific "variants", see
-  # https://flutter.dev/assets-and-images/#resolution-aware.
-
-  # For details regarding adding assets from package dependencies, see
-  # https://flutter.dev/assets-and-images/#from-packages
-
-  # To add custom fonts to your application, add a fonts section here,
-  # in this "flutter" section. Each entry in this list should have a
-  # "family" key with the font family name, and a "fonts" key with a
-  # list giving the asset and other descriptors for the font. For
-  # example:
-  # fonts:
-  #   - family: Schyler
-  #     fonts:
-  #       - asset: fonts/Schyler-Regular.ttf
-  #       - asset: fonts/Schyler-Italic.ttf
-  #         style: italic
-  #   - family: Trajan Pro
-  #     fonts:
-  #       - asset: fonts/TrajanPro.ttf
-  #       - asset: fonts/TrajanPro_Bold.ttf
-  #         weight: 700
-  #
-  # For details regarding fonts from package dependencies,
-  # see https://flutter.dev/custom-fonts/#from-packages
 
   fonts:
     - family: DBHeavent

@@ -2,90 +2,140 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-	<key>AppGroupId</key>
-	<string>$(CUSTOM_GROUP_ID)</string>
-	<key>CADisableMinimumFrameDurationOnPhone</key>
-	<true/>
-	<key>CFBundleDevelopmentRegion</key>
-	<string>$(DEVELOPMENT_LANGUAGE)</string>
-	<key>CFBundleDisplayName</key>
-	<string>รับส่งไฟล์</string>
-	<key>CFBundleExecutable</key>
-	<string>$(EXECUTABLE_NAME)</string>
-	<key>CFBundleIdentifier</key>
-	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
-	<key>CFBundleInfoDictionaryVersion</key>
-	<string>6.0</string>
-	<key>CFBundleName</key>
-	<string>navy_encrypt</string>
-	<key>CFBundlePackageType</key>
-	<string>APPL</string>
-	<key>CFBundleShortVersionString</key>
-	<string>$(MARKETING_VERSION)</string>
-	<key>CFBundleSignature</key>
-	<string>????</string>
-	<key>CFBundleURLTypes</key>
-	<array>
-		<dict>
-			<key>CFBundleTypeRole</key>
-			<string>Editor</string>
-			<key>CFBundleURLSchemes</key>
-			<array>
-				<string>ShareMedia-$(PRODUCT_BUNDLE_IDENTIFIER)</string>
-			</array>
-		</dict>
-		<dict/>
-		<dict>
-			<key>CFBundleTypeRole</key>
-			<string>Editor</string>
-			<key>CFBundleURLSchemes</key>
-			<array>
-				<string>com.googleusercontent.apps.786699358980-qvot4vtonrfcvo9r5jrqhls9to62m3g2</string>
-			</array>
-		</dict>
-	</array>
-	<key>CFBundleVersion</key>
-	<string>$(CURRENT_PROJECT_VERSION)</string>
-	<key>LSApplicationQueriesSchemes</key>
-	<array>
-		<string>https</string>
-		<string>http</string>
-	</array>
-	<key>LSRequiresIPhoneOS</key>
-	<true/>
-	<key>NSAppTransportSecurity</key>
-	<dict>
-		<key>NSAllowsArbitraryLoads</key>
-		<true/>
-	</dict>
-	<key>NSCameraUsageDescription</key>
-	<string>แอปต้องการสิทธิ์ในการเข้าถึงกล้อง เพื่อให้คุณสามารถถ่ายรูปหรือวิดีโอ แล้วนำมาใส่ลายน้ำและ/หรือเข้ารหัสได้</string>
-	<key>NSMicrophoneUsageDescription</key>
-	<string>แอปต้องการสิทธิ์ในการเข้าถึงไมโครโฟน เพื่อให้คุณสามารถถ่ายวิดีโอที่มีเสียง แล้วนำวิดีโอมาเข้ารหัสได้</string>
-	<key>NSPhotoLibraryAddUsageDescription</key>
-	<string>แอปต้องการสิทธิ์ในการเข้าถึงคลังภาพ เพื่อให้คุณสามารถบันทึกรูปภาพเก็บไว้ในคลังภาพได้</string>
-	<key>NSPhotoLibraryUsageDescription</key>
-	<string>แอปต้องการสิทธิ์ในการเข้าถึงคลังภาพ เพื่อให้คุณสามารถเลือกรูปภาพมาใส่ลายน้ำและ/หรือเข้ารหัสได้</string>
-	<key>UIApplicationSupportsIndirectInputEvents</key>
-	<true/>
-	<key>UIBackgroundModes</key>
-	<array>
-		<string>fetch</string>
-		<string>remote-notification</string>
-	</array>
-	<key>UILaunchStoryboardName</key>
-	<string>LaunchScreen</string>
-	<key>UIMainStoryboardFile</key>
-	<string>Main</string>
-	<key>UIRequiresFullScreen</key>
-	<true/>
-	<key>UISupportedInterfaceOrientations</key>
-	<array>
-		<string>UIInterfaceOrientationPortrait</string>
-	</array>
-	<key>UISupportsDocumentBrowser</key>
-	<true/>
-	<key>UIViewControllerBasedStatusBarAppearance</key>
-	<false/>
+<key>AppGroupId</key>
+<string>$(CUSTOM_GROUP_ID)</string>
+<key>CADisableMinimumFrameDurationOnPhone</key>
+<true/>
+<key>CFBundleDevelopmentRegion</key>
+<string>$(DEVELOPMENT_LANGUAGE)</string>
+<key>CFBundleDisplayName</key>
+<string>รับส่งไฟล์</string>
+<key>CFBundleDocumentTypes</key>
+<array>
+<dict>
+<key>CFBundleTypeName</key>
+<string>NAVEC Encrypted File</string>
+<key>CFBundleTypeRole</key>
+<string>Editor</string>
+<key>CFBundleTypeExtensions</key>
+<array>
+<string>enc</string>
+</array>
+<key>LSItemContentTypes</key>
+<array>
+<string>th.mi.navy.navec.enc</string>
+</array>
+</dict>
+<dict>
+<key>CFBundleTypeName</key>
+<string>NAVEC Watermarked Asset</string>
+<key>CFBundleTypeRole</key>
+<string>Viewer</string>
+<key>LSItemContentTypes</key>
+<array>
+<string>public.image</string>
+<string>com.adobe.pdf</string>
+</array>
+</dict>
+</array>
+<key>CFBundleExecutable</key>
+<string>$(EXECUTABLE_NAME)</string>
+<key>CFBundleIdentifier</key>
+<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+<key>CFBundleInfoDictionaryVersion</key>
+<string>6.0</string>
+<key>CFBundleName</key>
+<string>navy_encrypt</string>
+<key>CFBundlePackageType</key>
+<string>APPL</string>
+<key>CFBundleShortVersionString</key>
+<string>$(MARKETING_VERSION)</string>
+<key>CFBundleSignature</key>
+<string>????</string>
+<key>CFBundleURLTypes</key>
+<array>
+<dict>
+<key>CFBundleTypeRole</key>
+<string>Editor</string>
+<key>CFBundleURLSchemes</key>
+<array>
+<string>ShareMedia-$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+</array>
+</dict>
+<dict/>
+<dict>
+<key>CFBundleTypeRole</key>
+<string>Editor</string>
+<key>CFBundleURLSchemes</key>
+<array>
+<string>com.googleusercontent.apps.786699358980-qvot4vtonrfcvo9r5jrqhls9to62m3g2</string>
+</array>
+</dict>
+</array>
+<key>CFBundleVersion</key>
+<string>$(CURRENT_PROJECT_VERSION)</string>
+<key>LSApplicationQueriesSchemes</key>
+<array>
+<string>https</string>
+<string>http</string>
+</array>
+<key>LSRequiresIPhoneOS</key>
+<true/>
+<key>LSSupportsOpeningDocumentsInPlace</key>
+<true/>
+<key>NSAppTransportSecurity</key>
+<dict>
+<key>NSAllowsArbitraryLoads</key>
+<true/>
+</dict>
+<key>NSCameraUsageDescription</key>
+<string>แอปต้องการสิทธิ์ในการเข้าถึงกล้อง เพื่อให้คุณสามารถถ่ายรูปหรือวิดีโอ แล้วนำมาใส่ลายน้ำและ/หรือเข้ารหัสได้</string>
+<key>NSMicrophoneUsageDescription</key>
+<string>แอปต้องการสิทธิ์ในการเข้าถึงไมโครโฟน เพื่อให้คุณสามารถถ่ายวิดีโอที่มีเสียง แล้วนำวิดีโอมาเข้ารหัสได้</string>
+<key>NSPhotoLibraryAddUsageDescription</key>
+<string>แอปต้องการสิทธิ์ในการเข้าถึงคลังภาพ เพื่อให้คุณสามารถบันทึกรูปภาพเก็บไว้ในคลังภาพได้</string>
+<key>NSPhotoLibraryUsageDescription</key>
+<string>แอปต้องการสิทธิ์ในการเข้าถึงคลังภาพ เพื่อให้คุณสามารถเลือกรูปภาพมาใส่ลายน้ำและ/หรือเข้ารหัสได้</string>
+<key>UIApplicationSupportsIndirectInputEvents</key>
+<true/>
+<key>UIBackgroundModes</key>
+<array>
+<string>fetch</string>
+<string>remote-notification</string>
+</array>
+<key>UIFileSharingEnabled</key>
+<true/>
+<key>UILaunchStoryboardName</key>
+<string>LaunchScreen</string>
+<key>UIMainStoryboardFile</key>
+<string>Main</string>
+<key>UIRequiresFullScreen</key>
+<true/>
+<key>UISupportedInterfaceOrientations</key>
+<array>
+<string>UIInterfaceOrientationPortrait</string>
+</array>
+<key>UISupportsDocumentBrowser</key>
+<true/>
+<key>UIViewControllerBasedStatusBarAppearance</key>
+<false/>
+<key>UTExportedTypeDeclarations</key>
+<array>
+<dict>
+<key>UTTypeIdentifier</key>
+<string>th.mi.navy.navec.enc</string>
+<key>UTTypeDescription</key>
+<string>NAVEC Encrypted File</string>
+<key>UTTypeTagSpecification</key>
+<dict>
+<key>public.filename-extension</key>
+<array>
+<string>enc</string>
+</array>
+<key>public.mime-type</key>
+<string>application/octet-stream</string>
+</dict>
+</dict>
+</array>
 </dict>
 </plist>

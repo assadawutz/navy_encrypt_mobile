@@ -21,6 +21,9 @@ import 'package:navy_encrypt/common/widget_view.dart';
 import 'package:navy_encrypt/etc/constants.dart';
 import 'package:navy_encrypt/etc/dimension_util.dart';
 import 'package:navy_encrypt/etc/file_util.dart';
+import 'package:navy_encrypt/core/io_helper.dart';
+import 'package:navy_encrypt/core/perm_guard.dart';
+import 'package:navy_encrypt/core/crypto_flow.dart';
 import 'package:navy_encrypt/etc/utils.dart';
 import 'package:navy_encrypt/pages/cloud_picker/cloud_picker_page.dart';
 import 'package:navy_encrypt/pages/cloud_picker/google_drive.dart';
@@ -32,7 +35,6 @@ import 'package:navy_encrypt/pages/history/history_page.dart';
 import 'package:navy_encrypt/pages/settings/settings_page.dart';
 // import 'package:package_info_plus/package_info_plus.dart';
 import 'package:path/path.dart' as p;
-import 'package:permission_handler/permission_handler.dart';
 
 part 'home_page_view.dart';
 part 'home_page_view_win.dart';
@@ -62,7 +64,7 @@ class HomePageController extends MyState<HomePage> {
 
   HomePageController(this.filePath);
 
-  static const int _maxFileSizeInBytes = 20 * 1024 * 1024;
+  static const int _maxFileSizeInBytes = CryptoFlow.maxFileSizeInBytes;
 
   @override
   Widget build(BuildContext context) {
@@ -91,55 +93,35 @@ class HomePageController extends MyState<HomePage> {
 
   Future<void> _pickFile(BuildContext context) async {
     try {
-      final status = await Permission.storage.request();
-      if (!status.isGranted) {
+      final granted = await PermGuard.ensurePickerAccess();
+      if (!granted) {
         _showSnackBar('ยกเลิกการเลือกไฟล์');
         return;
       }
 
       final result = await FilePicker.platform.pickFiles(withData: true);
-      if (result == null) {
+      if (result == null || result.files.isEmpty) {
         _showSnackBar('ยกเลิกการเลือกไฟล์');
         return;
       }
 
       final file = result.files.single;
       final size = file.size ?? file.bytes?.length;
-      if (size != null && size > _maxFileSizeInBytes) {
+      if (size != null && size > CryptoFlow.maxFileSizeInBytes) {
         _showSnackBar('ไฟล์มีขนาดเกิน 20MB');
         return;
       }
 
-      final targetPath = file.path;
-      final targetName = targetPath ?? file.name;
-      if (targetName == null || targetName.trim().isEmpty) {
-        _showSnackBar('ไม่พบไฟล์');
+      File persisted;
+      try {
+        persisted = await IOHelper.persistPlatformFile(file);
+      } catch (error) {
+        debugPrint('❌ Failed to persist picked file: $error');
+        _showSnackBar('เกิดข้อผิดพลาด: ${error.toString()}');
         return;
       }
 
-      if (!_checkFileExtension(targetName)) {
-        return;
-      }
-
-      String resolvedPath = targetPath;
-      if ((resolvedPath == null || resolvedPath.trim().isEmpty) &&
-          file.bytes != null &&
-          file.bytes.isNotEmpty) {
-        try {
-          final tempFile = await FileUtil.createFileFromBytes(
-            targetName,
-            file.bytes,
-          );
-          resolvedPath = tempFile?.path;
-        } catch (error) {
-          debugPrint('❌ Failed to persist picked file: $error');
-          _showSnackBar('เกิดข้อผิดพลาด: ${error.toString()}');
-          return;
-        }
-      }
-
-      if (resolvedPath == null || resolvedPath.trim().isEmpty) {
-        _showSnackBar('ไม่พบไฟล์');
+      if (!_checkFileExtension(persisted.path)) {
         return;
       }
 
@@ -147,7 +129,7 @@ class HomePageController extends MyState<HomePage> {
         return;
       }
 
-      handleIntent(resolvedPath, file.bytes);
+      handleIntent(persisted.path, file.bytes);
     } catch (error) {
       debugPrint('❌ Error picking file: $error');
       _showSnackBar('เกิดข้อผิดพลาด: ${error.toString()}');
@@ -177,55 +159,24 @@ class HomePageController extends MyState<HomePage> {
       bytes = Uint8List.fromList(fileBytes);
     }
 
-    String resolvedPath = filePath;
-    if (resolvedPath == null || resolvedPath.trim().isEmpty) {
-      if (bytes == null || bytes.isEmpty) {
-        _showSnackBar('ไม่พบไฟล์');
-        return;
-      }
-
-      try {
-        final baseName = (filePath != null && filePath.trim().isNotEmpty)
-            ? p.basename(filePath.trim())
-            : 'navy_${DateTime.now().millisecondsSinceEpoch}';
-        final tempFile = await FileUtil.createFileFromBytes(baseName, bytes);
-        resolvedPath = tempFile?.path;
-      } catch (error) {
-        _showSnackBar('เกิดข้อผิดพลาด: ${error.toString()}');
-        return;
-      }
-    }
-
-    if (resolvedPath == null || resolvedPath.trim().isEmpty) {
-      _showSnackBar('ไม่พบไฟล์');
-      return;
-    }
-
+    File resolvedFile;
     try {
-      final file = File(resolvedPath);
-      if (!await file.exists()) {
-        if (bytes != null && bytes.isNotEmpty) {
-          final tempFile = await FileUtil.createFileFromBytes(
-            p.basename(resolvedPath),
-            bytes,
-          );
-          resolvedPath = tempFile?.path;
-        } else {
-          _showSnackBar('ไม่พบไฟล์');
-          return;
-        }
-      }
+      resolvedFile = await IOHelper.ensureFile(filePath, fallbackBytes: bytes);
     } catch (error) {
       _showSnackBar('เกิดข้อผิดพลาด: ${error.toString()}');
       return;
     }
 
-    if (resolvedPath == null || resolvedPath.trim().isEmpty) {
+    if (resolvedFile == null) {
       _showSnackBar('ไม่พบไฟล์');
       return;
     }
 
-    final extension = p.extension(resolvedPath).toLowerCase();
+    if (!_checkFileExtension(resolvedFile.path)) {
+      return;
+    }
+
+    final extension = p.extension(resolvedFile.path).toLowerCase();
     final routeToGo = extension == '.enc'
         ? DecryptionPage.routeName
         : EncryptionPage.routeName;
@@ -244,7 +195,7 @@ class HomePageController extends MyState<HomePage> {
         Navigator.pushNamed(
           context,
           routeToGo,
-          arguments: resolvedPath,
+          arguments: resolvedFile.path,
         );
       },
     );
@@ -392,20 +343,10 @@ class HomePageController extends MyState<HomePage> {
     }
 
     try {
-      if (Platform.isAndroid == true) {
-        await requestStoragePermission();
-        final permissionPhotos = Permission.photos;
-        final permissionAudio = Permission.audio;
-        final permissionCamera = Permission.camera;
-        if (await permissionPhotos.isDenied) {
-          await permissionPhotos.request();
-        }
-        if (await permissionAudio.isDenied) {
-          await permissionAudio.request();
-        }
-        if (await permissionCamera.isDenied) {
-          await permissionCamera.request();
-        }
+      final granted = await PermGuard.ensurePickerAccess();
+      if (!granted) {
+        _showSnackBar('ยกเลิกการเลือกไฟล์');
+        return;
       }
 
       File pickedFile;
@@ -467,40 +408,6 @@ class HomePageController extends MyState<HomePage> {
       _showSnackBar('เกิดข้อผิดพลาด: ${error.toString()}');
     }
   }
-
-  Future<bool> requestStoragePermission() async {
-    if (Platform.isAndroid) {
-      if (Platform.version.compareTo('33') >= 0) {
-        // Android 13+
-        var imagePerm = await Permission.photos.request();
-        var videoPerm = await Permission.videos.request();
-        return imagePerm.isGranted || videoPerm.isGranted;
-      } else {
-        // Android 12-
-        var storagePerm = await Permission.storage.request();
-        return storagePerm.isGranted;
-      }
-    }
-    return true;
-  }
-
-  // void _openSystemPicker(BuildContext context) async {
-  //   bool granted = await requestStoragePermission();
-  //   // _pickFile(c);
-  //   if (!granted) {
-  //     print('❌ Permission denied');
-  //     return;
-  //   }
-  //
-  //   try {
-  //     // final pickedFile = await FilePickerCross.importFromStorage(
-  //     //   type: FileTypeCross.any,
-  //     // );
-  //     // print('📂 Path: ${pickedFile.path}');
-  //   } on PlatformException catch (e) {
-  //     print('⚠️ PlatformException: ${e.message}');
-  //   }
-  // }
 
   _pickFromCamera(BuildContext context) async {
     if (Platform.isWindows) {

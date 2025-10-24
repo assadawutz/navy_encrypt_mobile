@@ -14,7 +14,7 @@ import 'package:navy_encrypt/common/my_state.dart';
 import 'package:navy_encrypt/common/widget_view.dart';
 import 'package:navy_encrypt/etc/constants.dart';
 import 'package:navy_encrypt/etc/utils.dart';
-import 'package:navy_encrypt/navy_encryption/navec.dart';
+import 'package:navy_encrypt/core/crypto_flow.dart';
 import 'package:navy_encrypt/navy_encryption/watermark.dart';
 import 'package:navy_encrypt/pages/settings/settings_page.dart';
 import 'package:navy_encrypt/storage/prefs.dart';
@@ -39,7 +39,7 @@ class DecryptionPage extends StatefulWidget {
 }
 
 class _DecryptionPageController extends MyState<DecryptionPage> {
-  static const int _maxFileSizeInBytes = 20 * 1024 * 1024;
+  static const int _maxFileSizeInBytes = CryptoFlow.maxFileSizeInBytes;
   String _toBeDecryptedFilePath;
   final _passwordEditingController = TextEditingController();
   var _passwordVisible = false;
@@ -130,20 +130,20 @@ class _DecryptionPageController extends MyState<DecryptionPage> {
     }
 
     isLoading = true;
-    List decryptData;
+    CryptoFlowResult flowResult;
     File outFile;
     String uuid;
     final email = await MyPrefs.getEmail();
     final secret = await MyPrefs.getSecret();
 
     try {
-      decryptData = await Navec.decryptFile(
+      flowResult = await CryptoFlow.decrypt(
         context: context,
         filePath: _toBeDecryptedFilePath,
         password: password,
       );
-      outFile = decryptData[0];
-      uuid = decryptData[1];
+      outFile = flowResult.file;
+      uuid = flowResult.uuid;
     } catch (error) {
       _showSnackBar('เกิดข้อผิดพลาด: ${error.toString()}');
       isLoading = false;

@@ -23,7 +23,7 @@ import 'package:navy_encrypt/etc/utils.dart';
 import 'package:navy_encrypt/navy_encryption/watermark.dart';
 import 'package:navy_encrypt/services/api.dart';
 import 'package:navy_encrypt/storage/prefs.dart';
-import 'package:open_file/open_file.dart';
+import 'package:open_filex/open_filex.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 part 'settings_page_view.dart';
@@ -353,7 +353,7 @@ class _SettingsPageController extends MyState<SettingsPage> {
           'UserManual.pdf',
           res.bodyBytes,
         ).then((manual) {
-          OpenFile.open(manual.path).then((result) {
+          OpenFilex.open(manual.path).then((result) {
             if (result.type == ResultType.noAppToOpen) {
               throw Exception('ไม่พบโปรแกรมเปิดอ่านไฟล์คู่มือ!');
             }
