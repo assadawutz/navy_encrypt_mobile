@@ -32,6 +32,7 @@ import 'package:navy_encrypt/pages/decryption/decryption_page.dart';
 import 'package:navy_encrypt/pages/encryption/encryption_page.dart';
 import 'package:navy_encrypt/pages/history/history_page.dart';
 import 'package:navy_encrypt/pages/settings/settings_page.dart';
+import 'package:navy_encrypt/pages/screen_catalog/screen_catalog_page.dart';
 
 // import 'package:package_info_plus/package_info_plus.dart';
 import 'package:path/path.dart' as p;
@@ -70,9 +71,14 @@ class HomePageController extends MyState<HomePage> {
 
   @override
   Widget build(BuildContext context) {
-    return isLandscapeLayout(context)
-        ? _HomePageViewWin(this)
-        : _HomePageView(this);
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final useDesktopLayout = constraints.maxWidth >= 900;
+        return useDesktopLayout
+            ? _HomePageViewWin(this)
+            : _HomePageView(this);
+      },
+    );
   }
 
   @override
@@ -288,6 +294,16 @@ class HomePageController extends MyState<HomePage> {
           Navigator.pushNamed(
             context,
             HistoryPage.routeName,
+          );
+        },
+      },
+      {
+        'image': 'assets/images/ic_setting.png',
+        'text': 'หน้าทั้งหมด',
+        'onClick': (BuildContext context) {
+          Navigator.pushNamed(
+            context,
+            ScreenCatalogPage.routeName,
           );
         },
       },

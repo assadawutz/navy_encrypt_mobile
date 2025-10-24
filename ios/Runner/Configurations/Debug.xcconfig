@@ -1,0 +1,6 @@
+// Shared debug build settings managed outside of Xcode UI to support CI pipelines.
+PRODUCT_BUNDLE_IDENTIFIER = th.co.rtn.navyEncrypt.debug
+DEVELOPMENT_TEAM = THNAVYTEAM
+CODE_SIGN_STYLE = Automatic
+CODE_SIGN_IDENTITY = iPhone Developer
+PROVISIONING_PROFILE_SPECIFIER =

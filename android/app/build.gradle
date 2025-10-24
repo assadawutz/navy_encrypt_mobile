@@ -24,6 +24,43 @@ if (flutterVersionName == null) {
     flutterVersionName = '1.0'
 }
 
+def keystoreProperties = new Properties()
+def keystorePropertiesFile = rootProject.file('key.properties')
+if (keystorePropertiesFile.exists()) {
+    keystorePropertiesFile.withReader('UTF-8') { reader ->
+        keystoreProperties.load(reader)
+    }
+}
+
+def releaseSigningConfigured = false
+
+def envProperties = new Properties()
+def dotenvFile = rootProject.file('../.env')
+if (dotenvFile.exists()) {
+    dotenvFile.withReader('UTF-8') { reader ->
+        envProperties.load(reader)
+    }
+}
+
+String resolveSecret(String rawValue) {
+    if (rawValue == null) {
+        return null
+    }
+    def matcher = rawValue =~ /^ENV\[(.+)\]$/
+    if (matcher.matches()) {
+        def key = matcher.group(1)
+        def envValue = System.getenv(key)
+        if (envValue != null && !envValue.trim().isEmpty()) {
+            return envValue.trim()
+        }
+        if (envProperties.containsKey(key)) {
+            return envProperties.getProperty(key)
+        }
+        return null
+    }
+    return rawValue
+}
+
 apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
 apply from: "$flutterRoot/packages/flutter_tools/gradle/flutter.gradle"
@@ -59,10 +96,37 @@ android {
         multiDexEnabled true
     }
 
+    signingConfigs {
+        release {
+            if (keystorePropertiesFile.exists()) {
+                def keyAliasValue = resolveSecret(keystoreProperties['keyAlias'])
+                def keyPasswordValue = resolveSecret(keystoreProperties['keyPassword'])
+                def storePasswordValue = resolveSecret(keystoreProperties['storePassword'])
+                def storeFilePath = resolveSecret(keystoreProperties['storeFile']) ?: 'app/release.keystore'
+
+                if (keyAliasValue && keyPasswordValue && storePasswordValue) {
+                    keyAlias keyAliasValue
+                    keyPassword keyPasswordValue
+                    storePassword storePasswordValue
+                    storeFile rootProject.file(storeFilePath)
+                    releaseSigningConfigured = true
+                }
+            }
+        }
+    }
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
+            if (releaseSigningConfigured) {
+                signingConfig signingConfigs.release
+            } else {
+                println('⚠️  Release signing is not fully configured. Falling back to the debug keystore.')
+                signingConfig signingConfigs.debug
+            }
+            minifyEnabled true
+            shrinkResources true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+        debug {
             signingConfig signingConfigs.debug
         }
     }

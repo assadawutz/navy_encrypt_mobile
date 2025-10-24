@@ -78,13 +78,6 @@ double screenRatio(BuildContext context) {
   return screenHeight(context) / screenWidth(context);
 }
 
-bool isLandscapeLayout(BuildContext context) {
-  return Platform.isWindows ||
-      (screenRatio(context) < 1 &&
-          screenWidth(context) > 1000 &&
-          screenHeight(context) > 500);
-}
-
 Future<bool> isIpad() async {
   DeviceInfoPlugin deviceInfo = DeviceInfoPlugin();
   if (Platform.isIOS) {

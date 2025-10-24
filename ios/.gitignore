@@ -1,0 +1,5 @@
+Flutter/Generated.xcconfig
+Flutter/ephemeral/
+Pods/
+.build/
+DerivedData/

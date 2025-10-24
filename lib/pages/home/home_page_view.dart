@@ -66,18 +66,7 @@ class _HomePageView extends WidgetView<HomePage, HomePageController> {
                 for (var i = 0; i < state._menuData.length; i += 2)
                   Expanded(
                     child: Row(
-                      children: [
-                        for (var j = i; j < i + 2; j++)
-                          MenuItem(
-                            text: state._menuData[j]['text'],
-                            image: state._menuData[j]['image'],
-                            onClick: state._menuData[j]['onClick'] == null
-                                ? null
-                                : () {
-                                    state._menuData[j]['onClick'](context);
-                                  },
-                          ),
-                      ],
+                      children: _buildRowChildren(context, i),
                     ),
                   ),
               ],
@@ -120,6 +109,31 @@ class _HomePageView extends WidgetView<HomePage, HomePageController> {
     } else {
       return 'assets/images/bg_header_home_4.png';
     }
+  }
+
+  List<Widget> _buildRowChildren(BuildContext context, int startIndex) {
+    final rowChildren = <Widget>[];
+    for (var j = startIndex;
+        j < startIndex + 2 && j < state._menuData.length;
+        j++) {
+      rowChildren.add(
+        MenuItem(
+          text: state._menuData[j]['text'],
+          image: state._menuData[j]['image'],
+          onClick: state._menuData[j]['onClick'] == null
+              ? null
+              : () {
+                  state._menuData[j]['onClick'](context);
+                },
+        ),
+      );
+    }
+
+    if (rowChildren.length == 1) {
+      rowChildren.add(const Expanded(child: SizedBox.shrink()));
+    }
+
+    return rowChildren;
   }
 }
 

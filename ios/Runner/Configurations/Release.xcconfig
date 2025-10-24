@@ -1,0 +1,7 @@
+// Release configuration aligns with enterprise distribution and CI no-codesign builds.
+PRODUCT_BUNDLE_IDENTIFIER = th.co.rtn.navyEncrypt
+DEVELOPMENT_TEAM = THNAVYTEAM
+CODE_SIGN_STYLE = Manual
+CODE_SIGN_IDENTITY = iPhone Distribution
+PROVISIONING_PROFILE_SPECIFIER = NAVY_ENTERPRISE_PROFILE
+ENABLE_BITCODE = NO

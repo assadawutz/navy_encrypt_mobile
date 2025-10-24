@@ -1,0 +1,24 @@
+{
+  "images" : [
+    {
+      "orientation" : "portrait",
+      "idiom" : "iphone",
+      "extent" : "full-screen",
+      "minimum-system-version" : "7.0",
+      "scale" : "2x",
+      "filename" : "LaunchImage@2x.png"
+    },
+    {
+      "orientation" : "portrait",
+      "idiom" : "iphone",
+      "extent" : "full-screen",
+      "minimum-system-version" : "7.0",
+      "scale" : "3x",
+      "filename" : "LaunchImage@3x.png"
+    }
+  ],
+  "info" : {
+    "version" : 1,
+    "author" : "navy-encrypt-ci"
+  }
+}

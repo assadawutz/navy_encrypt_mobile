@@ -71,9 +71,14 @@ class _EncryptionPageController extends MyState<EncryptionPage> {
 
     print('PATH OF FILE TO BE ENCRYPTED: $_toBeEncryptedFilePath');
 
-    return isLandscapeLayout(context)
-        ? _EncryptionPageViewWin(this)
-        : _EncryptionPageView(this);
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final useDesktopLayout = constraints.maxWidth >= 900;
+        return useDesktopLayout
+            ? _EncryptionPageViewWin(this)
+            : _EncryptionPageView(this);
+      },
+    );
   }
 
   _handleClickPasswordEye() {

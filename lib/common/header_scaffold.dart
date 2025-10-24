@@ -42,9 +42,16 @@ class HeaderScaffold extends StatelessWidget {
   }) : super(key: key);
 
   @override
-  Widget build(BuildContext context) => isLandscapeLayout(context)
-      ? _HeaderScaffoldViewWin(this)
-      : _HeaderScaffoldView(this);
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final useDesktopLayout = constraints.maxWidth >= 900;
+        return useDesktopLayout
+            ? _HeaderScaffoldViewWin(this)
+            : _HeaderScaffoldView(this);
+      },
+    );
+  }
 
   void _handleClickBackButton(BuildContext context) {
     print('BACK BUTTON CLICKED!');

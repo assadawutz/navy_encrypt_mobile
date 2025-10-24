@@ -18,7 +18,7 @@
   <string>Apple Distribution</string>
   <key>provisioningProfiles</key>
   <dict>
-    <key>th.mi.navy.navy-encrypt</key>
+    <key>th.co.rtn.navyEncrypt</key>
     <string>ENTERPRISE_PROFILE_NAME</string>
   </dict>
 </dict>
