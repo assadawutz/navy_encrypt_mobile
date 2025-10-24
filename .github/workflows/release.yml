@@ -85,6 +85,7 @@ KEYPROPS
     if: github.event_name != 'workflow_dispatch' || github.event.inputs.upload_ios == 'true'
     name: iOS enterprise IPA
     runs-on: macos-latest
+    needs: []
     env:
       IOS_CERTIFICATE_BASE64: ${{ secrets.IOS_ENTERPRISE_CERT_P12_BASE64 }}
       IOS_CERTIFICATE_PASSWORD: ${{ secrets.IOS_ENTERPRISE_CERT_PASSWORD }}
@@ -150,24 +151,23 @@ KEYPROPS
           UUID=$(/usr/libexec/PlistBuddy -c "Print UUID" "${PROFILE_PATH}")
           cp "${PROFILE_PATH}" "${HOME}/Library/MobileDevice/Provisioning Profiles/${UUID}.mobileprovision"
 
-      - name: Determine iOS build version
-        id: ios_build_version
+      - name: Prepare release metadata
+        id: release_metadata
         shell: bash
+        env:
+          INPUT_TAG: ${{ github.event.inputs.release_tag }}
         run: |
-          RAW_TAG="${{ github.event_name == 'workflow_dispatch' && github.event.inputs.release_tag || github.ref_name }}"
+          RAW_TAG="${INPUT_TAG}"
           if [[ -z "${RAW_TAG}" ]]; then
-            RAW_TAG="${GITHUB_REF_NAME:-${GITHUB_REF##*/}}"
-          fi
-          if [[ -z "${RAW_TAG}" ]]; then
-            echo 'Unable to determine release tag for FLUTTER_BUILD_NAME' >&2
-            exit 1
+            RAW_TAG="${GITHUB_REF_NAME}"
           fi
           CLEAN_TAG="${RAW_TAG#v}"
-          echo "version=${CLEAN_TAG}" >> "${GITHUB_OUTPUT}"
+          echo "RELEASE_TAG=${RAW_TAG}" >> "${GITHUB_ENV}"
+          echo "FLUTTER_BUILD_NAME=${CLEAN_TAG}" >> "${GITHUB_ENV}"
 
       - name: Build enterprise IPA
         env:
-          FLUTTER_BUILD_NAME: ${{ steps.ios_build_version.outputs.version }}
+          FLUTTER_BUILD_NAME: ${{ env.FLUTTER_BUILD_NAME }}
         run: flutter build ipa --release --no-pub --export-options-plist "${EXPORT_OPTIONS}"
 
       - name: Upload iOS artifact
