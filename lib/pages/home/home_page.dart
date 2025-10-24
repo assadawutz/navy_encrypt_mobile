@@ -3,7 +3,6 @@ library home_page;
 import 'dart:io' show Directory, File, FileSystemEntity, Platform;
 import 'dart:typed_data';
 
-import 'package:device_info_plus/device_info_plus.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -31,7 +30,7 @@ import 'package:navy_encrypt/pages/history/history_page.dart';
 import 'package:navy_encrypt/pages/settings/settings_page.dart';
 // import 'package:package_info_plus/package_info_plus.dart';
 import 'package:path/path.dart' as p;
-import 'package:permission_handler/permission_handler.dart';
+import 'package:navy_encrypt/core/perm_guard.dart';
 
 part 'home_page_view.dart';
 part 'home_page_view_win.dart';
@@ -62,8 +61,6 @@ class HomePageController extends MyState<HomePage> {
   HomePageController(this.filePath);
 
   static const int _maxFileSizeInBytes = 20 * 1024 * 1024;
-  int? _cachedAndroidSdkInt;
-
   @override
   Widget build(BuildContext context) {
     return isLandscapeLayout(context)
@@ -295,52 +292,6 @@ class HomePageController extends MyState<HomePage> {
       ..showSnackBar(SnackBar(content: Text(message)));
   }
 
-  bool _isPermissionGranted(PermissionStatus status) {
-    return status.isGranted || status.isLimited;
-  }
-
-  Future<int?> _resolveAndroidSdkInt() async {
-    if (!Platform.isAndroid) {
-      return null;
-    }
-    if (_cachedAndroidSdkInt != null) {
-      return _cachedAndroidSdkInt;
-    }
-    try {
-      final info = await DeviceInfoPlugin().androidInfo;
-      _cachedAndroidSdkInt = info.version.sdkInt;
-      return _cachedAndroidSdkInt;
-    } catch (error) {
-      debugPrint('⚠️ อ่าน Android SDK ไม่สำเร็จ: $error');
-      return null;
-    }
-  }
-
-  Future<bool> _ensureAndroidMediaPermissions({
-    bool pickImage = false,
-    bool pickVideo = false,
-  }) async {
-    if (!Platform.isAndroid) {
-      return true;
-    }
-
-    final sdkInt = await _resolveAndroidSdkInt();
-    if (sdkInt != null && sdkInt >= 33) {
-      final statuses = <PermissionStatus>[];
-      if (pickImage || (!pickVideo)) {
-        statuses.add(await Permission.photos.request());
-      }
-      if (pickVideo || (!pickImage)) {
-        statuses.add(await Permission.videos.request());
-      }
-      statuses.add(await Permission.audio.request());
-      return statuses.any(_isPermissionGranted);
-    }
-
-    final storageStatus = await Permission.storage.request();
-    return _isPermissionGranted(storageStatus);
-  }
-
   _pickFromFileSystem(BuildContext context) async {
     logOneLineWithBorderDouble(await FileUtil.getImageDirPath());
 
@@ -437,9 +388,9 @@ class HomePageController extends MyState<HomePage> {
 
     try {
       if (Platform.isAndroid) {
-        final granted = await _ensureAndroidMediaPermissions(
-          pickImage: pickImage,
-          pickVideo: pickVideo,
+        final granted = await PermGuard.ensurePickerAccess(
+          images: pickImage || !pickVideo,
+          videos: pickVideo || !pickImage,
         );
         if (!granted) {
           _showSnackBar('ไม่สามารถเข้าถึงไฟล์สื่อได้');
