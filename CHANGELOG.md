@@ -8,13 +8,14 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ### Added
 - Platform guard that validates storage permissions on Android, sandbox access on iOS,
   and local disk availability on Windows before the UI loads.
-- Environment loader with `.env` assets so release credentials and branding stay out of source code.
 - Windows PowerShell packaging script plus GitHub Actions job that publish a zipped runner.
 - Flutter FVM configuration to lock the toolchain to version 3.3.8 across platforms.
 - Deterministic Dart script that generates iOS icons/launch images during the build so binary assets stay out of git.
 
 ### Changed
 - Updated Android signing to read keystore secrets from environment variables or `.env` files instead of hardcoding them.
+- Replaced the Flutter runtime `.env` loader with compile-time defines so signing
+  credentials never ship inside the application bundle.
 - Externalised iOS build configuration into checked-in `.xcconfig` files that align with the enterprise export plist.
 - Reworked responsive layouts to use `LayoutBuilder`, ensuring desktop and tablet widths render correctly.
 - Extended the release workflow to enforce changelog/tag parity and to build Android, iOS, and Windows artifacts in parallel.

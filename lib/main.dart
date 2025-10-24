@@ -4,7 +4,6 @@ import 'dart:io' show Platform;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:navy_encrypt/core/env_loader.dart';
 import 'package:navy_encrypt/core/platform_guard.dart';
 import 'package:navy_encrypt/etc/constants.dart';
 import 'package:navy_encrypt/etc/share_intent_handler.dart';
@@ -92,7 +91,6 @@ Future<void> main(List<String> arguments) async {
 // Ideal time to initialize
 //   await FirebaseAuth.instance.useAuthEmulator('localhost', 9099);
 
-  final envConfig = await EnvConfig.load();
   final guardResult = await PlatformGuard.ensureInitialized();
 
   SystemChrome.setPreferredOrientations([
@@ -110,17 +108,15 @@ Future<void> main(List<String> arguments) async {
   runApp(ChangeNotifierProvider(
     create: (_) => LoadingMessage(),
     child: MyApp(
-      env: envConfig,
       guardResult: guardResult,
     ),
   ));
 }
 
 class MyApp extends StatefulWidget {
-  final EnvConfig env;
   final PlatformGuardResult guardResult;
 
-  const MyApp({Key key, @required this.env, @required this.guardResult})
+  const MyApp({Key key, @required this.guardResult})
       : super(key: key);
 
   @override
@@ -136,8 +132,11 @@ class _MyAppState extends State<MyApp> {
   //var _showSplash = true;
   String _filePath;
 
+  static const String _appTitleOverride =
+      String.fromEnvironment('APP_DISPLAY_NAME', defaultValue: '');
+
   String get _appTitle =>
-      widget.env?.get('APP_DISPLAY_NAME', fallback: 'รับส่งไฟล์') ?? 'รับส่งไฟล์';
+      _appTitleOverride.isNotEmpty ? _appTitleOverride : 'รับส่งไฟล์';
 
   @override
   void initState() {

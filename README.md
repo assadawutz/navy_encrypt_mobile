@@ -22,8 +22,9 @@
 ## Configuration and secrets
 
 1. Copy `.env.example` to `.env` and replace each value with production-ready
-   secrets. The file is loaded at runtime and also used by the Android Gradle
-   scripts when local environment variables are unavailable.
+   secrets. The file is consumed only by native build scripts (for example the
+   Android Gradle task) when environment variables are unavailable, and it must
+   never be added to the Flutter asset bundle.
 2. Provide a signing keystore when creating release builds:
    - **CI** – Add `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`,
      `ANDROID_KEY_ALIAS`, and `ANDROID_KEY_PASSWORD` secrets. The workflow
@@ -32,10 +33,14 @@
      `.env` file with the keystore path/passwords. The default sample points to
      `../secrets/navy_release.keystore`, which resolves to a sibling directory
      outside of version control.
-3. Windows release archives are generated with
+3. To customise the app name in Flutter builds, pass a compile-time define such
+   as `--dart-define=APP_DISPLAY_NAME="Navy Encrypt"`. Secrets should be
+   sourced from the native platforms (for example, `key.properties`) instead of
+   shipping inside the Dart binary.
+4. Windows release archives are generated with
    `windows/scripts/package_release.ps1`, which bundles the runner output into a
    portable ZIP without tracking binaries in git.
-4. ก่อน build iOS ให้สร้าง asset ด้วยสคริปต์:
+5. ก่อน build iOS ให้สร้าง asset ด้วยสคริปต์:
    ```bash
    fvm flutter pub run tool/generate_apple_assets.dart
    ```
