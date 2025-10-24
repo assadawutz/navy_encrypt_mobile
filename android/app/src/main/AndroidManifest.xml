@@ -1,9 +1,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
     package="th.mi.navy.navy_encrypt">
 
     <uses-permission android:name="android.permission.INTERNET" />
-    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
-    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
     <uses-permission android:name="android.permission.READ_MEDIA_VIDEO" />
     <uses-permission android:name="android.permission.READ_MEDIA_AUDIO" />
@@ -11,7 +10,8 @@
     <application
         android:icon="@mipmap/ic_launcher"
         android:label="รับส่งไฟล์"
-        android:requestLegacyExternalStorage="true"
+        android:requestLegacyExternalStorage="false"
+        tools:targetApi="31"
         android:roundIcon="@mipmap/ic_launcher_round">
 
         <!-- MainActivity -->
