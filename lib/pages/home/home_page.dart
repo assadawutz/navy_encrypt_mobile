@@ -3,7 +3,6 @@ library home_page;
 import 'dart:io' show Directory, File, FileSystemEntity, Platform;
 import 'dart:typed_data';
 
-import 'package:device_info_plus/device_info_plus.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -17,6 +16,8 @@ import 'package:navy_encrypt/common/header_scaffold.dart';
 import 'package:navy_encrypt/common/my_dialog.dart';
 import 'package:navy_encrypt/common/my_state.dart';
 import 'package:navy_encrypt/common/widget_view.dart';
+import 'package:navy_encrypt/core/io_helper.dart';
+import 'package:navy_encrypt/core/perm_guard.dart';
 import 'package:navy_encrypt/etc/constants.dart';
 import 'package:navy_encrypt/etc/dimension_util.dart';
 import 'package:navy_encrypt/etc/file_util.dart';
@@ -31,7 +32,6 @@ import 'package:navy_encrypt/pages/history/history_page.dart';
 import 'package:navy_encrypt/pages/settings/settings_page.dart';
 // import 'package:package_info_plus/package_info_plus.dart';
 import 'package:path/path.dart' as p;
-import 'package:permission_handler/permission_handler.dart';
 
 part 'home_page_view.dart';
 part 'home_page_view_win.dart';
@@ -62,7 +62,6 @@ class HomePageController extends MyState<HomePage> {
   HomePageController(this.filePath);
 
   static const int _maxFileSizeInBytes = 20 * 1024 * 1024;
-  int? _cachedAndroidSdkInt;
 
   @override
   Widget build(BuildContext context) {
@@ -91,6 +90,14 @@ class HomePageController extends MyState<HomePage> {
 
   Future<void> _pickFile(BuildContext context) async {
     try {
+      if (Platform.isAndroid) {
+        final granted = await PermGuard.ensureFileSystemAccess();
+        if (!granted) {
+          _showSnackBar('ไม่สามารถเข้าถึงไฟล์ได้');
+          return;
+        }
+      }
+
       final result = await FilePicker.platform.pickFiles(
         withData: Platform.isIOS || Platform.isAndroid,
       );
@@ -122,9 +129,10 @@ class HomePageController extends MyState<HomePage> {
           file.bytes != null &&
           file.bytes.isNotEmpty) {
         try {
-          final tempFile = await FileUtil.createFileFromBytes(
-            targetName,
-            file.bytes,
+          final tempFile = await IOHelper.persistBytes(
+            fileName: targetName,
+            bytes: file.bytes,
+            uniqueSubDir: true,
           );
           resolvedPath = tempFile?.path;
         } catch (error) {
@@ -162,88 +170,54 @@ class HomePageController extends MyState<HomePage> {
 
   // called from main.dart
   Future<void> handleIntent(String filePath, [List<int> fileBytes]) async {
-    if ((filePath == null || filePath.trim().isEmpty) &&
-        (fileBytes == null || fileBytes.isEmpty)) {
-      _showSnackBar('ไม่พบไฟล์');
-      return;
-    }
+    try {
+      final Uint8List bytes =
+          (fileBytes != null && fileBytes.isNotEmpty)
+              ? Uint8List.fromList(fileBytes)
+              : null;
 
-    Uint8List bytes;
-    if (fileBytes != null && fileBytes.isNotEmpty) {
-      bytes = Uint8List.fromList(fileBytes);
-    }
+      final fallbackName = (filePath != null && filePath.trim().isNotEmpty)
+          ? p.basename(filePath.trim())
+          : null;
 
-    String resolvedPath = filePath;
-    if (resolvedPath == null || resolvedPath.trim().isEmpty) {
-      if (bytes == null || bytes.isEmpty) {
+      final resolvedFile = await IOHelper.ensureFile(
+        path: filePath,
+        bytes: bytes,
+        fallbackName: fallbackName,
+      );
+
+      if (resolvedFile == null || !await resolvedFile.exists()) {
         _showSnackBar('ไม่พบไฟล์');
         return;
       }
 
-      try {
-        final baseName = (filePath != null && filePath.trim().isNotEmpty)
-            ? p.basename(filePath.trim())
-            : 'navy_${DateTime.now().millisecondsSinceEpoch}';
-        final tempFile = await FileUtil.createFileFromBytes(baseName, bytes);
-        resolvedPath = tempFile?.path;
-      } catch (error) {
-        _showSnackBar('เกิดข้อผิดพลาด: ${error.toString()}');
+      final resolvedPath = resolvedFile.path;
+      final extension = p.extension(resolvedPath).toLowerCase();
+      final routeToGo = extension == '.enc'
+          ? DecryptionPage.routeName
+          : EncryptionPage.routeName;
+
+      if (!mounted) {
         return;
       }
-    }
 
-    if (resolvedPath == null || resolvedPath.trim().isEmpty) {
-      _showSnackBar('ไม่พบไฟล์');
-      return;
-    }
-
-    try {
-      final file = File(resolvedPath);
-      if (!await file.exists()) {
-        if (bytes != null && bytes.isNotEmpty) {
-          final tempFile = await FileUtil.createFileFromBytes(
-            p.basename(resolvedPath),
-            bytes,
+      Future.delayed(
+        Duration.zero,
+        () {
+          if (!mounted) {
+            return;
+          }
+          Navigator.of(context).popUntil((route) => route.isFirst);
+          Navigator.pushNamed(
+            context,
+            routeToGo,
+            arguments: resolvedPath,
           );
-          resolvedPath = tempFile?.path;
-        } else {
-          _showSnackBar('ไม่พบไฟล์');
-          return;
-        }
-      }
+        },
+      );
     } catch (error) {
       _showSnackBar('เกิดข้อผิดพลาด: ${error.toString()}');
-      return;
     }
-
-    if (resolvedPath == null || resolvedPath.trim().isEmpty) {
-      _showSnackBar('ไม่พบไฟล์');
-      return;
-    }
-
-    final extension = p.extension(resolvedPath).toLowerCase();
-    final routeToGo = extension == '.enc'
-        ? DecryptionPage.routeName
-        : EncryptionPage.routeName;
-
-    if (!mounted) {
-      return;
-    }
-
-    Future.delayed(
-      Duration.zero,
-      () {
-        if (!mounted) {
-          return;
-        }
-        Navigator.of(context).popUntil((route) => route.isFirst);
-        Navigator.pushNamed(
-          context,
-          routeToGo,
-          arguments: resolvedPath,
-        );
-      },
-    );
   }
 
   void _initMenuData() {
@@ -295,52 +269,6 @@ class HomePageController extends MyState<HomePage> {
       ..showSnackBar(SnackBar(content: Text(message)));
   }
 
-  bool _isPermissionGranted(PermissionStatus status) {
-    return status.isGranted || status.isLimited;
-  }
-
-  Future<int?> _resolveAndroidSdkInt() async {
-    if (!Platform.isAndroid) {
-      return null;
-    }
-    if (_cachedAndroidSdkInt != null) {
-      return _cachedAndroidSdkInt;
-    }
-    try {
-      final info = await DeviceInfoPlugin().androidInfo;
-      _cachedAndroidSdkInt = info.version.sdkInt;
-      return _cachedAndroidSdkInt;
-    } catch (error) {
-      debugPrint('⚠️ อ่าน Android SDK ไม่สำเร็จ: $error');
-      return null;
-    }
-  }
-
-  Future<bool> _ensureAndroidMediaPermissions({
-    bool pickImage = false,
-    bool pickVideo = false,
-  }) async {
-    if (!Platform.isAndroid) {
-      return true;
-    }
-
-    final sdkInt = await _resolveAndroidSdkInt();
-    if (sdkInt != null && sdkInt >= 33) {
-      final statuses = <PermissionStatus>[];
-      if (pickImage || (!pickVideo)) {
-        statuses.add(await Permission.photos.request());
-      }
-      if (pickVideo || (!pickImage)) {
-        statuses.add(await Permission.videos.request());
-      }
-      statuses.add(await Permission.audio.request());
-      return statuses.any(_isPermissionGranted);
-    }
-
-    final storageStatus = await Permission.storage.request();
-    return _isPermissionGranted(storageStatus);
-  }
-
   _pickFromFileSystem(BuildContext context) async {
     logOneLineWithBorderDouble(await FileUtil.getImageDirPath());
 
@@ -369,10 +297,10 @@ class HomePageController extends MyState<HomePage> {
                 Navigator.pushNamed(
                   context,
                   CloudPickerPage.routeName,
-                  arguments: CloudPickerPageArg(
+                      arguments: CloudPickerPageArg(
                       cloudDrive: LocalDrive(
                         CloudPickerMode.file,
-                        (await FileUtil.getDocDir()).path,
+                        (await IOHelper.ensureDocDir()).path,
                       ),
                       title: 'โฟลเดอร์ของแอป',
                       headerImagePath: 'assets/images/ic_document.png',
@@ -436,13 +364,19 @@ class HomePageController extends MyState<HomePage> {
     }
 
     try {
-      if (Platform.isAndroid) {
-        final granted = await _ensureAndroidMediaPermissions(
+      if (pickImage || pickVideo) {
+        final granted = await PermGuard.ensureMediaAccess(
           pickImage: pickImage,
           pickVideo: pickVideo,
         );
         if (!granted) {
           _showSnackBar('ไม่สามารถเข้าถึงไฟล์สื่อได้');
+          return;
+        }
+      } else if (Platform.isAndroid) {
+        final granted = await PermGuard.ensureFileSystemAccess();
+        if (!granted) {
+          _showSnackBar('ไม่สามารถเข้าถึงไฟล์ได้');
           return;
         }
       }
@@ -548,7 +482,11 @@ class HomePageController extends MyState<HomePage> {
                 ),
                 onClick: () {
                   _pickMediaFile(
-                      context, _picker.pickImage, ImageSource.camera);
+                    context,
+                    _picker.pickImage,
+                    ImageSource.camera,
+                    isVideo: false,
+                  );
                   Navigator.pop(context);
                 },
               ),
@@ -561,7 +499,11 @@ class HomePageController extends MyState<HomePage> {
                 ),
                 onClick: () {
                   _pickMediaFile(
-                      context, _picker.pickVideo, ImageSource.camera);
+                    context,
+                    _picker.pickVideo,
+                    ImageSource.camera,
+                    isVideo: true,
+                  );
                   Navigator.pop(context);
                 },
               ),
@@ -609,7 +551,11 @@ class HomePageController extends MyState<HomePage> {
                     Future.delayed(
                         Duration.zero,
                         () => _pickMediaFile(
-                            context, _picker.pickImage, ImageSource.gallery));
+                              context,
+                              _picker.pickImage,
+                              ImageSource.gallery,
+                              isVideo: false,
+                            ));
                   },
                 ),
                 DialogTileData(
@@ -624,7 +570,11 @@ class HomePageController extends MyState<HomePage> {
                     Future.delayed(
                         Duration.zero,
                         () => _pickMediaFile(
-                            context, _picker.pickVideo, ImageSource.gallery));
+                              context,
+                              _picker.pickVideo,
+                              ImageSource.gallery,
+                              isVideo: true,
+                            ));
                   },
                 ),
               ]);
@@ -839,14 +789,24 @@ class HomePageController extends MyState<HomePage> {
     }
   }
 
-  _pickMediaFile(
-      BuildContext context, Function pickMethod, ImageSource source) async {
+  _pickMediaFile(BuildContext context, Function pickMethod, ImageSource source,
+      {bool isVideo = false}) async {
     if (Platform.isWindows) {
       _showSnackBar('Windows ไม่รองรับกล้อง');
       return;
     }
 
     if (!mounted) {
+      return;
+    }
+
+    final granted = await PermGuard.ensureMediaAccess(
+      pickImage: !isVideo,
+      pickVideo: isVideo,
+      forCamera: source == ImageSource.camera,
+    );
+    if (!granted) {
+      _showSnackBar('ไม่สามารถเข้าถึงไฟล์สื่อได้');
       return;
     }
 
