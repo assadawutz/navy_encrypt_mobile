@@ -53,12 +53,8 @@ class PermGuard {
     if (Platform.isAndroid) {
       final sdkInt = await _androidSdkInt();
       if (sdkInt >= 33) {
-        final results = await <Permission>{
-          Permission.photos,
-          Permission.videos,
-          Permission.audio,
-        }.request();
-        return results.values.every((status) => status.isGranted);
+        final status = await Permission.photos.request();
+        return status.isGranted || status.isLimited;
       }
 
       final storage = await Permission.storage.request();

@@ -263,14 +263,23 @@ class _EncryptionPageController extends MyState<EncryptionPage> {
     final directory = p.dirname(file.path);
     final timestamp = DateTime.now().millisecondsSinceEpoch;
     if (result.encrypted) {
-      final targetPath = p.join(directory, 'file_encrypted_\${timestamp}.${Navec.encryptedFileExtension}');
+      final targetPath = p.join(
+        directory,
+        'file_encrypted_${timestamp}.${Navec.encryptedFileExtension}',
+      );
       return file.rename(targetPath);
     }
     if (result.watermarked) {
-      final targetPath = p.join(directory, 'file_watermarked_\${timestamp}${p.extension(file.path)}');
+      final targetPath = p.join(
+        directory,
+        'file_watermarked_${timestamp}${p.extension(file.path)}',
+      );
       return file.rename(targetPath);
     }
-    final targetPath = p.join(directory, 'file_processed_\${timestamp}${p.extension(file.path)}');
+    final targetPath = p.join(
+      directory,
+      'file_processed_${timestamp}${p.extension(file.path)}',
+    );
     return file.rename(targetPath);
   }
 
