@@ -15,7 +15,7 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-
+        
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
@@ -25,10 +25,15 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
-      - name: Build unsigned IPA
-        run: flutter build ipa  --no-pub \
-            --build-name "1" \
-            --export-options-plist "${EXPORT_OPTIONS}"
+  
+
+      - name: Set build version
+        run: |
+         echo "FLUTTER_BUILD_NAME=1.0.0" >> $GITHUB_ENV
+         echo "FLUTTER_BUILD_NUMBER=1" >> $GITHUB_ENV
+
+      - name: Build debug IPA
+        run: flutter build ipa --no-pub --no-codesign
 
       - name: Locate IPA path
         id: locate-ipa
