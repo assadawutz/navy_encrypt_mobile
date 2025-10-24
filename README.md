@@ -35,6 +35,16 @@
      `.env` file with the keystore path/passwords. The default sample points to
      `../secrets/navy_release.keystore`, which resolves to a sibling directory
      outside of version control.
+3. Runtime configuration for the Flutter app should be provided via
+   `--dart-define` flags. Encode a newline-delimited env file containing
+   **non-sensitive** values and pass it through `APP_CONFIG_BASE64`:
+   ```bash
+   base64_env=$(base64 -w0 runtime.env) # Use `base64 | tr -d '\n'` on macOS
+   fvm flutter run \
+     --dart-define=APP_CONFIG_BASE64=$base64_env
+   ```
+   The loader decodes the string on startup and exposes the values through
+   `EnvConfig`. Omit the flag to fall back to hardcoded defaults.
 3. Windows release archives are generated with
    `windows/scripts/package_release.ps1`, which bundles the runner output into a
    portable ZIP without tracking binaries in git.
