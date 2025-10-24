@@ -2,26 +2,13 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:flutter/foundation.dart';
 import 'package:navy_encrypt/navy_encryption/algorithms/aes.dart';
 import 'package:navy_encrypt/navy_encryption/algorithms/base_algorithm.dart';
 import 'package:navy_encrypt/navy_encryption/navec.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider_platform_interface/path_provider_platform_interface.dart';
 
-class _FakePathProviderPlatform extends PathProviderPlatform {
-  _FakePathProviderPlatform({@required this.tempPath, @required this.documentsPath})
-      : super();
-
-  final String tempPath;
-  final String documentsPath;
-
-  @override
-  Future<String> getTemporaryPath() async => tempPath;
-
-  @override
-  Future<String> getApplicationDocumentsPath() async => documentsPath;
-}
+import '../helpers/fake_path_provider.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -33,7 +20,7 @@ void main() {
 
     setUp(() async {
       tempDirectory = await Directory.systemTemp.createTemp('navec_encrypt_test_');
-      PathProviderPlatform.instance = _FakePathProviderPlatform(
+      PathProviderPlatform.instance = FakePathProviderPlatform(
         tempPath: tempDirectory.path,
         documentsPath: tempDirectory.path,
       );
