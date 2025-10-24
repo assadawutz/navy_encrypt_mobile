@@ -1,56 +1,239 @@
-name: Release Builds
+# DIR: .github/workflows/release.yml   # WHY: ตั้ง JDK11 เป็นดีฟอลต์ทั้ง workflow และคงขั้นตอน iOS ที่เสถียร
+name: Release Build
 
 on:
-  push:
-    branches:
-      - main
   workflow_dispatch:
+    inputs:
+      release_tag:
+        description: "Optional tag to apply to the generated artifacts (ex: v1.2.3)"
+        required: false
+      upload_android:
+        description: "Build Android release APK"
+        required: false
+        default: "true"
+      upload_ios:
+        description: "Build iOS enterprise IPA"
+        required: false
+        default: "true"
+  push:
+    tags:
+      - "v*"
+
+env:
+  FLUTTER_VERSION: "3.3.8"
+  FLUTTER_CHANNEL: "stable"
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
 
 jobs:
-  ios:
-    name: Build iOS Simulator
-    runs-on: macos-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: subosito/flutter-action@v2
-        with:
-          flutter-version: "3.3.8"
-      - name: Flutter Doctor
-        run: flutter doctor -v
-      - name: Flutter Analyze
-        run: flutter analyze
-      - name: Install CocoaPods
-        working-directory: ios
-        run: pod install
-      - name: Build iOS Simulator
-        run: flutter build ios --simulator --no-codesign
-
-  android:
-    name: Build Android Release
+  android-release:
+    if: github.event_name != 'workflow_dispatch' || github.event.inputs.upload_android == 'true'
+    name: Android release APK
     runs-on: ubuntu-latest
+    env:
+      ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+      ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+      ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+      ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+      KEYSTORE_PATH: ${{ runner.temp }}/release.keystore
     steps:
-      - uses: actions/checkout@v4
-      - uses: subosito/flutter-action@v2
-        with:
-          flutter-version: "3.3.8"
-      - name: Flutter Doctor
-        run: flutter doctor -v
-      - name: Flutter Analyze
-        run: flutter analyze
-      - name: Build Android APK
-        run: flutter build apk --release
+      - name: Checkout
+        uses: actions/checkout@v4
 
-  windows:
-    name: Build Windows
-    runs-on: windows-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: subosito/flutter-action@v2
+      - name: Set up Java 11 (default)
+        uses: actions/setup-java@v4
         with:
-          flutter-version: "3.3.8"
-      - name: Flutter Doctor
-        run: flutter doctor -v
-      - name: Flutter Analyze
-        run: flutter analyze
-      - name: Build Windows
-        run: flutter build windows
+          distribution: temurin
+          java-version: "11"
+
+      - name: Set up Flutter ${{ env.FLUTTER_VERSION }}
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: ${{ env.FLUTTER_CHANNEL }}
+
+      - name: Cache Pub
+        uses: actions/cache@v4
+        with:
+          path: ~/.pub-cache
+          key: pub-${{ runner.os }}-${{ hashFiles('**/pubspec.lock') }}
+          restore-keys: |
+            pub-${{ runner.os }}-
+
+      - name: Cache Gradle
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ runner.os }}-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: |
+            gradle-${{ runner.os }}-
+
+      - name: Validate Android signing inputs
+        shell: bash
+        run: |
+          if [[ -z "${ANDROID_KEYSTORE_BASE64}" || -z "${ANDROID_KEYSTORE_PASSWORD}" || -z "${ANDROID_KEY_ALIAS}" || -z "${ANDROID_KEY_PASSWORD}" ]]; then
+            echo "Android signing secrets are missing."
+            exit 1
+          fi
+
+      - name: Prepare Android signing files
+        shell: bash
+        run: |
+          echo "${ANDROID_KEYSTORE_BASE64}" | base64 --decode > "${KEYSTORE_PATH}"
+          chmod 600 "${KEYSTORE_PATH}"
+          mkdir -p android
+          cat > android/key.properties <<'KEYPROPS'
+          storePassword=${ANDROID_KEYSTORE_PASSWORD}
+          keyPassword=${ANDROID_KEY_PASSWORD}
+          keyAlias=${ANDROID_KEY_ALIAS}
+          storeFile=${KEYSTORE_PATH}
+          KEYPROPS
+
+      - name: Flutter pub get
+        run: flutter pub get
+
+      - name: Ensure gradlew exec
+        run: chmod +x android/gradlew
+
+      - name: Build release APK
+        run: flutter build apk --release --no-pub
+
+      - name: Upload Android artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-release-apk
+          path: build/app/outputs/flutter-apk/app-release.apk
+          if-no-files-found: error
+
+  ios-release:
+    if: github.event_name != 'workflow_dispatch' || github.event.inputs.upload_ios == 'true'
+    name: iOS enterprise IPA
+    runs-on: macos-latest
+    env:
+      IOS_CERTIFICATE_BASE64: ${{ secrets.IOS_ENTERPRISE_CERT_P12_BASE64 }}
+      IOS_CERTIFICATE_PASSWORD: ${{ secrets.IOS_ENTERPRISE_CERT_PASSWORD }}
+      IOS_PROVISIONING_PROFILE_BASE64: ${{ secrets.IOS_ENTERPRISE_PROFILE_BASE64 }}
+      IOS_KEYCHAIN_PASSWORD: ${{ secrets.IOS_KEYCHAIN_PASSWORD }}
+      EXPORT_OPTIONS: ios/export_options_enterprise.plist
+      KEYCHAIN_PATH: ${{ runner.temp }}/build.keychain-db
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Select Xcode
+        uses: apple-actions/setup-xcode@v2
+        with:
+          xcode-version: "16.1"
+      # สลับเป็น 15.4 หากจำเป็น:
+      # - uses: apple-actions/setup-xcode@v2
+      #   with:
+      #     xcode-version: "15.4"
+
+      - name: Set up Flutter ${{ env.FLUTTER_VERSION }}
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: ${{ env.FLUTTER_CHANNEL }}
+
+      - name: Flutter precache iOS
+        run: flutter precache --ios --force
+
+      - name: Cache Pub
+        uses: actions/cache@v4
+        with:
+          path: ~/.pub-cache
+          key: pub-${{ runner.os }}-${{ hashFiles('**/pubspec.lock') }}
+          restore-keys: |
+            pub-${{ runner.os }}-
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Validate iOS signing inputs
+        shell: bash
+        run: |
+          if [[ -z "${IOS_CERTIFICATE_BASE64}" || -z "${IOS_CERTIFICATE_PASSWORD}" || -z "${IOS_PROVISIONING_PROFILE_BASE64}" ]]; then
+            echo "iOS enterprise signing secrets are missing."
+            exit 1
+          fi
+          if [[ -z "${IOS_KEYCHAIN_PASSWORD}" ]]; then
+            echo "IOS_KEYCHAIN_PASSWORD is required."
+            exit 1
+          fi
+
+      - name: Configure temporary keychain
+        shell: bash
+        run: |
+          security create-keychain -p "${IOS_KEYCHAIN_PASSWORD}" "${KEYCHAIN_PATH}"
+          security set-keychain-settings -lut 21600 "${KEYCHAIN_PATH}"
+          security unlock-keychain -p "${IOS_KEYCHAIN_PASSWORD}" "${KEYCHAIN_PATH}"
+          security list-keychain -d user -s "${KEYCHAIN_PATH}" ~/Library/Keychains/login.keychain-db
+
+      - name: Import enterprise certificate
+        shell: bash
+        run: |
+          CERT_PATH="${RUNNER_TEMP}/enterprise_cert.p12"
+          echo "${IOS_CERTIFICATE_BASE64}" | base64 --decode > "${CERT_PATH}"
+          security import "${CERT_PATH}" -k "${KEYCHAIN_PATH}" -P "${IOS_CERTIFICATE_PASSWORD}" -A -T /usr/bin/codesign
+          security set-key-partition-list -S apple-tool:,apple: -s -k "${IOS_KEYCHAIN_PASSWORD}" "${KEYCHAIN_PATH}"
+
+      - name: Install provisioning profile (parse UUID)
+        shell: bash
+        run: |
+          PROFILE_PATH="${RUNNER_TEMP}/enterprise_profile.mobileprovision"
+          echo "${IOS_PROVISIONING_PROFILE_BASE64}" | base64 --decode > "${PROFILE_PATH}"
+          mkdir -p "${HOME}/Library/MobileDevice/Provisioning Profiles"
+          UUID=$(security cms -D -i "${PROFILE_PATH}" | /usr/libexec/PlistBuddy -c 'Print UUID' /dev/stdin)
+          cp "${PROFILE_PATH}" "${HOME}/Library/MobileDevice/Provisioning Profiles/${UUID}.mobileprovision"
+
+      - name: Pod repo update + install
+        working-directory: ios
+        run: |
+          pod --version
+          pod repo update
+          pod install --verbose
+
+      - name: Prepare release metadata (build-name)
+        id: release_metadata
+        shell: bash
+        env:
+          INPUT_TAG: ${{ github.event.inputs.release_tag }}
+        run: |
+          RAW_TAG="${INPUT_TAG:-${GITHUB_REF_NAME}}"
+          CLEAN_TAG="${RAW_TAG}"
+          if [[ "${CLEAN_TAG}" =~ ^[vV](.+)$ ]]; then
+            CLEAN_TAG="${BASH_REMATCH[1]}"
+          fi
+          if [[ -z "${CLEAN_TAG}" ]]; then
+            echo "Unable to determine a semantic version for FLUTTER_BUILD_NAME."
+            exit 1
+          fi
+          echo "RELEASE_TAG=${RAW_TAG}" >> "${GITHUB_ENV}"
+          echo "FLUTTER_BUILD_NAME=${CLEAN_TAG}" >> "${GITHUB_ENV}"
+
+      - name: Build enterprise IPA
+        env:
+          FLUTTER_BUILD_NAME: ${{ env.FLUTTER_BUILD_NAME }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          flutter build ipa --release --no-pub \
+            --build-name "${FLUTTER_BUILD_NAME}" \
+            --export-options-plist "${EXPORT_OPTIONS}"
+
+      - name: Upload iOS artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-enterprise-ipa
+          path: build/ios/ipa/*.ipa
+          if-no-files-found: error
+
+      - name: Cleanup keychain
+        if: always()
+        shell: bash
+        run: |
+          security delete-keychain "${KEYCHAIN_PATH}" || true
