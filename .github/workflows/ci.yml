@@ -1,11 +1,7 @@
-name: Debug Build (FVM 3.3.8)
+name: Debug Build (FVM 3.3.8 Fix)
 
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - main
-      - develop
 
 env:
   FLUTTER_VERSION: '3.3.8'
@@ -17,13 +13,24 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Install Dart SDK
+        uses: dart-lang/setup-dart@v1
 
+      - name: Install FVM
+        run: |
+          dart --version
+          dart pub global activate fvm
+          echo "$HOME/.pub-cache/bin" >> $GITHUB_PATH
+          fvm --version
+
+      - name: Setup Flutter via FVM
+        run: fvm install ${{ env.FLUTTER_VERSION }}
 
       - name: Flutter pub get
-        run:   flutter pub get
+        run: fvm flutter pub get
 
       - name: Build debug APK
-        run: flutter build apk --debug
+        run: fvm flutter build apk --debug
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
@@ -36,10 +43,21 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-  
+      - name: Install Dart SDK
+        uses: dart-lang/setup-dart@v1
+
+      - name: Install FVM
+        run: |
+          dart --version
+          dart pub global activate fvm
+          echo "$HOME/.pub-cache/bin" >> $GITHUB_PATH
+          fvm --version
+
+      - name: Setup Flutter via FVM
+        run: fvm install ${{ env.FLUTTER_VERSION }}
 
       - name: Flutter pub get
-        run: flutter pub get
+        run: fvm flutter pub get
 
       - name: Install CocoaPods
         run: |
@@ -47,7 +65,7 @@ jobs:
           pod install --repo-update
 
       - name: Build debug IPA (no signing)
-        run: flutter build ios --debug --no-codesign
+        run: fvm flutter build ios --debug --no-codesign
 
       - name: Archive .app to .ipa
         run: |
@@ -60,4 +78,3 @@ jobs:
         with:
           name: app-debug-ipa
           path: build/ios/iphonesimulator/Runner-debug.ipa
-
