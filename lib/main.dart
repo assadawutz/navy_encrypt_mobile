@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:io';
-import 'dart:io' show Platform;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -18,6 +17,7 @@ import 'package:navy_encrypt/pages/result/result_page.dart';
 import 'package:navy_encrypt/pages/settings/settings_page.dart';
 import 'package:navy_encrypt/pages/splash/splash_page.dart';
 import 'package:navy_encrypt/pages/screen_catalog/screen_catalog_page.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:page_transition/page_transition.dart';
 import 'package:provider/provider.dart';
 
@@ -134,13 +134,17 @@ class _MyAppState extends State<MyApp> {
 
   static const String _appTitleOverride =
       String.fromEnvironment('APP_DISPLAY_NAME', defaultValue: '');
-
-  String get _appTitle =>
-      _appTitleOverride.isNotEmpty ? _appTitleOverride : 'รับส่งไฟล์';
+  String _appTitle = 'รับส่งไฟล์';
 
   @override
   void initState() {
     super.initState();
+
+    if (_appTitleOverride.isNotEmpty) {
+      _appTitle = _appTitleOverride;
+    } else {
+      _resolvePackageAppTitle();
+    }
 
     _filePath = filePathFromCli; // กรณี Windows app
 
@@ -178,6 +182,20 @@ class _MyAppState extends State<MyApp> {
   void dispose() {
     _shareIntentHandler.cancelStreamSubscription();
     super.dispose();
+  }
+
+  Future<void> _resolvePackageAppTitle() async {
+    try {
+      final packageInfo = await PackageInfo.fromPlatform();
+      final appName = packageInfo.appName;
+      if (appName != null && appName.isNotEmpty && mounted) {
+        setState(() {
+          _appTitle = appName;
+        });
+      }
+    } catch (error) {
+      debugPrint('Unable to read package info for app title: $error');
+    }
   }
 
   @override

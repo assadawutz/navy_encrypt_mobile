@@ -16,6 +16,9 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Updated Android signing to read keystore secrets from environment variables or `.env` files instead of hardcoding them.
 - Replaced the Flutter runtime `.env` loader with compile-time defines so signing
   credentials never ship inside the application bundle.
+- Default Flutter UI titles now follow the native package display name when no
+  `APP_DISPLAY_NAME` define is provided, avoiding terminal-only workflows for
+  branding tweaks.
 - Externalised iOS build configuration into checked-in `.xcconfig` files that align with the enterprise export plist.
 - Reworked responsive layouts to use `LayoutBuilder`, ensuring desktop and tablet widths render correctly.
 - Extended the release workflow to enforce changelog/tag parity and to build Android, iOS, and Windows artifacts in parallel.

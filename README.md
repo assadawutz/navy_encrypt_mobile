@@ -33,8 +33,11 @@
      `.env` file with the keystore path/passwords. The default sample points to
      `../secrets/navy_release.keystore`, which resolves to a sibling directory
      outside of version control.
-3. To customise the app name in Flutter builds, pass a compile-time define such
-   as `--dart-define=APP_DISPLAY_NAME="Navy Encrypt"`. Secrets should be
+3. The Flutter UI inherits the package display name that you configure in the
+   platform projects (for example, `android:label` or `CFBundleDisplayName`).
+   Provide a compile-time override such as
+   `--dart-define=APP_DISPLAY_NAME="Navy Encrypt"` when you need to surface a
+   different label without editing the native manifests. Secrets should be
    sourced from the native platforms (for example, `key.properties`) instead of
    shipping inside the Dart binary.
 4. Windows release archives are generated with
