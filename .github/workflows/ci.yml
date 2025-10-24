@@ -17,19 +17,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install FVM
-        run: |
-          dart pub global activate fvm
-          echo "$HOME/.pub-cache/bin" >> $GITHUB_PATH
 
-      - name: Setup Flutter via FVM
-        run: fvm install ${{ env.FLUTTER_VERSION }}
 
       - name: Flutter pub get
-        run: fvm flutter pub get
+        run:   flutter pub get
 
       - name: Build debug APK
-        run: fvm flutter build apk --debug
+        run: flutter build apk --debug
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
@@ -42,16 +36,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install FVM
-        run: |
-          dart pub global activate fvm
-          echo "$HOME/.pub-cache/bin" >> $GITHUB_PATH
-
-      - name: Setup Flutter via FVM
-        run: fvm install ${{ env.FLUTTER_VERSION }}
+  
 
       - name: Flutter pub get
-        run: fvm flutter pub get
+        run: flutter pub get
 
       - name: Install CocoaPods
         run: |
@@ -59,7 +47,7 @@ jobs:
           pod install --repo-update
 
       - name: Build debug IPA (no signing)
-        run: fvm flutter build ios --debug --no-codesign
+        run: flutter build ios --debug --no-codesign
 
       - name: Archive .app to .ipa
         run: |
