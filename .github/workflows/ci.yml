@@ -64,9 +64,15 @@ jobs:
           cd ios
           pod install --repo-update
 
-      - name: Build debug IPA (no signing)
-        run: fvm flutter build ios --debug --no-codesign
+      - name: Set build version
+        run: |
+         echo "FLUTTER_BUILD_NAME=1.0.0" >> $GITHUB_ENV
+         echo "FLUTTER_BUILD_NUMBER=1" >> $GITHUB_ENV
 
+      - name: Build debug IPA
+        run: fvm flutter build ipa --no-pub --no-codesign
+
+      
       - name: Archive .app to .ipa
         run: |
           mkdir -p build/ios/ipa
