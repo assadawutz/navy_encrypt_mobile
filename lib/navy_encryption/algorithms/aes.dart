@@ -37,9 +37,9 @@ class Aes extends BaseAlgorithm {
       throw StateError('Invalid AES key length: $keyLengthInBytes');
     }
 
-    final trimmedPassword = (password ?? '').trim();
+    final normalizedPassword = password ?? '';
     final padByte = Navec.passwordPadChar.codeUnitAt(0);
-    final passwordBytes = utf8.encode(trimmedPassword);
+    final passwordBytes = utf8.encode(normalizedPassword);
 
     List<int> keyBytes;
     if (passwordBytes.length >= keyLengthInBytes) {
