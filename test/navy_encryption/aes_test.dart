@@ -32,6 +32,23 @@ void main() {
 
       expect(decryptedBytes, isNull);
     });
+
+    test('preserves whitespace-sensitive passwords', () {
+      final algorithm = Aes(keyLengthInBytes: 16);
+      final data = Uint8List.fromList(utf8.encode('Fleet credentials stored securely.'));
+
+      final encryptedTrimmed =
+          algorithm.encrypt('classified', Uint8List.fromList(data));
+      final encryptedWithSpaces =
+          algorithm.encrypt(' classified ', Uint8List.fromList(data));
+
+      expect(encryptedWithSpaces, isNot(equals(encryptedTrimmed)));
+
+      final decryptedWithSpaces =
+          algorithm.decrypt(' classified ', encryptedWithSpaces);
+
+      expect(decryptedWithSpaces, equals(Uint8List.fromList(data)));
+    });
   });
 
   test('NotEncrypt algorithm intentionally returns null', () {
