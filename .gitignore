@@ -128,3 +128,8 @@ ios/Runner/Assets.xcassets/AppIcon.appiconset/*.png
 ios/Runner/Assets.xcassets/LaunchImage.imageset/*.png
 !ios/Runner/Assets.xcassets/AppIcon.appiconset/Contents.json
 !ios/Runner/Assets.xcassets/LaunchImage.imageset/Contents.json
+
+# Environment configuration
+.env
+.env.*
+!.env.example

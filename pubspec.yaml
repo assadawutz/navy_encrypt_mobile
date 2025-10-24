@@ -109,7 +109,6 @@ flutter:
     - assets/images/
     - assets/images/win/
     - assets/images/logos/
-    - .env
 
   #   - images/a_dot_burr.jpeg
   #   - images/a_dot_ham.jpeg
