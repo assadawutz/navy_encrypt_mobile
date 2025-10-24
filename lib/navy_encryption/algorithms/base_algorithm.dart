@@ -50,8 +50,18 @@ class NotEncrypt extends BaseAlgorithm {
             keyLengthInBytes: null);
 
   @override
-  Uint8List encrypt(String password, Uint8List bytes) => null;
+  Uint8List encrypt(String password, Uint8List bytes) {
+    if (bytes == null) {
+      return null;
+    }
+    return Uint8List.fromList(bytes);
+  }
 
   @override
-  Uint8List decrypt(String password, Uint8List bytes) => null;
+  Uint8List decrypt(String password, Uint8List bytes) {
+    if (bytes == null) {
+      return null;
+    }
+    return Uint8List.fromList(bytes);
+  }
 }
