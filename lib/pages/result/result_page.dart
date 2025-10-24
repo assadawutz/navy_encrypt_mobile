@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import "package:collection/collection.dart";
+import 'package:device_info_plus/device_info_plus.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
@@ -282,16 +283,11 @@ class _ResultPageController extends MyState<ResultPage> {
     }
     // Android, iOS
     else {
-      var status = await Permission.storage.status;
-      if (status.isGranted) {
+      final hasPermission = await _ensureMediaPermission();
+      if (hasPermission) {
         await _doSaveToGallery(file);
       } else {
-        status = await Permission.storage.request();
-        if (status.isGranted) {
-          await _doSaveToGallery(file);
-        } else {
-          _showSnackBar('แอปไม่ได้รับอนุญาตให้บันทึกไฟล์');
-        }
+        _showSnackBar('แอปไม่ได้รับอนุญาตให้บันทึกไฟล์');
       }
     }
   }
@@ -299,9 +295,9 @@ class _ResultPageController extends MyState<ResultPage> {
   _doSaveToGallery(File file) async {
     try {
       var result = await ImageGallerySaverPlus.saveImage(
-      await file.readAsBytes(),
-      quality: 100,
-    );
+        await file.readAsBytes(),
+        quality: 100,
+      );
       showOkDialog(
         context,
         result['isSuccess']
@@ -358,7 +354,7 @@ class _ResultPageController extends MyState<ResultPage> {
       CloudPickerPage.routeName,
       arguments: CloudPickerPageArg(
           cloudDrive: localDrive..fileToUpload = file,
-          title: 'โฟลเดอรs์ของแอป',
+          title: 'โฟลเดอร์ของแอป',
           headerImagePath: 'assets/images/ic_document.png',
           rootName: 'App\'s Folder'),
       //arguments: localDrive..fileToUpload = File(_filePath),
@@ -423,16 +419,11 @@ class _ResultPageController extends MyState<ResultPage> {
         } else {
           logOneLineWithBorderDouble('SELECTED DIR: $selectedDirectory');
 
-          var status = await Permission.storage.status;
-          if (status.isGranted) {
+          final hasPermission = await _ensureMediaPermission();
+          if (hasPermission) {
             await _saveFile(selectedDirectory, sourceFile: file);
           } else {
-            status = await Permission.storage.request();
-            if (status.isGranted) {
-              await _saveFile(selectedDirectory, sourceFile: file);
-            } else {
-              _showSnackBar('แอปไม่ได้รับอนุญาตให้บันทึกไฟล์');
-            }
+            _showSnackBar('แอปไม่ได้รับอนุญาตให้บันทึกไฟล์');
           }
           //isLoading = false;
         }
@@ -1007,6 +998,53 @@ class _ResultPageController extends MyState<ResultPage> {
             .where((fileType) => fileType.fileExtension == fileExtension)
             .length >
         0;
+  }
+
+  bool _isPermissionGranted(PermissionStatus status) {
+    if (status == null) {
+      return false;
+    }
+    return status.isGranted || status.isLimited;
+  }
+
+  Future<bool> _ensureMediaPermission() async {
+    if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
+      return true;
+    }
+
+    Future<bool> requestPermission(Permission permission) async {
+      final currentStatus = await permission.status;
+      if (_isPermissionGranted(currentStatus)) {
+        return true;
+      }
+      final result = await permission.request();
+      return _isPermissionGranted(result);
+    }
+
+    if (Platform.isIOS) {
+      return await requestPermission(Permission.photos);
+    }
+
+    if (Platform.isAndroid) {
+      try {
+        final androidInfo = await DeviceInfoPlugin().androidInfo;
+        if (androidInfo.version.sdkInt >= 33) {
+          if (await requestPermission(Permission.photos)) {
+            return true;
+          }
+          if (await requestPermission(Permission.storage)) {
+            return true;
+          }
+          return false;
+        }
+      } catch (_) {
+        // ถ้าอ่านข้อมูลเวอร์ชัน Android ไม่ได้ ให้ fallback ไปใช้ Permission.storage
+      }
+
+      return await requestPermission(Permission.storage);
+    }
+
+    return await requestPermission(Permission.storage);
   }
 
   Future<File> _resolveResultFile() async {

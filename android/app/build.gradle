@@ -22,11 +22,6 @@ if (flutterVersionName == null) {
     flutterVersionName = '1.0'
 }
 
-apply plugin: 'com.android.application'
-apply plugin: 'kotlin-android'
-apply from: "$flutterRoot/packages/flutter_tools/gradle/flutter.gradle"
-
-
 def keystoreProperties = new Properties()
 def keystorePropertiesFile = rootProject.file('key.properties')
 if (keystorePropertiesFile.exists()) {
@@ -86,7 +81,7 @@ android {
     viewBinding {
         enabled true
     }
-    buildToolsVersion '36.0.0'
+    buildToolsVersion '34.0.0'
 }
 
 flutter {

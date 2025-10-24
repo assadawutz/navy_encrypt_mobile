@@ -238,7 +238,7 @@ class Watermark {
         p.dirname(filePath),
         '$oldFileBaseName${p.extension(filePath)}',
       );
-      return watermarkedFileList[0].renameSync(newFilePath);
+      return await watermarkedFileList[0].rename(newFilePath);
     }
   }
 
