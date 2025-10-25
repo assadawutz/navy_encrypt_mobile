@@ -17,6 +17,8 @@ import 'package:navy_encrypt/common/my_container.dart';
 import 'package:navy_encrypt/common/my_dialog.dart';
 import 'package:navy_encrypt/common/my_state.dart';
 import 'package:navy_encrypt/common/widget_view.dart';
+import 'package:navy_encrypt/core/crypto_flow.dart';
+import 'package:navy_encrypt/core/io_helper.dart';
 import 'package:navy_encrypt/etc/constants.dart';
 import 'package:navy_encrypt/etc/file_util.dart';
 import 'package:navy_encrypt/etc/utils.dart';
@@ -53,7 +55,6 @@ class ResultPage extends StatefulWidget {
 }
 
 class _ResultPageController extends MyState<ResultPage> {
-  static const int _maxFileSizeInBytes = 20 * 1024 * 1024;
   String _filePath;
   String _message;
   bool _isEncFile;
@@ -344,9 +345,10 @@ class _ResultPageController extends MyState<ResultPage> {
       return;
     }
 
+    final docDir = await IOHelper.ensureDocDir();
     var localDrive = LocalDrive(
       CloudPickerMode.folder,
-      (await FileUtil.getDocDir()).path,
+      docDir.path,
     );
     Navigator.pushNamed(
       context,
@@ -566,7 +568,7 @@ class _ResultPageController extends MyState<ResultPage> {
           ),
         );
       } else {
-        await Share.shareXFiles([xFile]);
+        await IOHelper.shareFile(file);
       }
     } catch (error) {
       _showSnackBar('เกิดข้อผิดพลาด: ${error.toString()}');
@@ -1018,21 +1020,11 @@ class _ResultPageController extends MyState<ResultPage> {
     for (final path in candidates) {
       try {
         final file = File(path);
-        if (!await file.exists()) {
-          continue;
-        }
-
-        final size = await file.length();
-        if (size <= 0) {
-          continue;
-        }
-
-        if (size > _maxFileSizeInBytes) {
-          _showSnackBar('ไฟล์มีขนาดเกิน 20MB');
-          return null;
-        }
-
+        await CryptoFlow.validateFile(file);
         return file;
+      } on CryptoFlowException catch (error) {
+        _showSnackBar(error.message);
+        return null;
       } catch (error) {
         _showSnackBar('เกิดข้อผิดพลาด: ${error.toString()}');
         return null;
