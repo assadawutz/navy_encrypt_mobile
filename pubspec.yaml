@@ -82,6 +82,7 @@ dependencies:
   # -----------------------
   uuid: ^4.1.0
   encrypt: ^5.0.0
+  crypto: ^3.0.2
   intl: ^0.17.0
   # -----------------------
   # Firebase

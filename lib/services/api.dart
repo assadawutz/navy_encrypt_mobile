@@ -6,6 +6,7 @@ import 'package:navy_encrypt/models/api_result.dart';
 import 'package:navy_encrypt/models/log.dart';
 import 'package:navy_encrypt/models/share_log.dart';
 import 'package:navy_encrypt/models/user.dart';
+import 'package:navy_encrypt/services/api_fallback.dart';
 
 class MyApi {
   static const END_POINT_REGISTER_WATERMARK = 'watermark/register';
@@ -41,7 +42,16 @@ class MyApi {
       return await _submit(END_POINT_REGISTER_WATERMARK, params);
     } catch (e) {
       print(e);
-      throw e;
+      print('Falling back to offline watermark registration');
+      return await ApiFallback.instance.registerWatermark(
+        email,
+        name,
+        phone,
+        refCode,
+        deviceOs,
+        deviceName,
+        deviceId,
+      );
     }
   }
 
@@ -55,7 +65,9 @@ class MyApi {
       return await _submit(END_POINT_ACTIVATE_WATERMARK, params);
     } catch (e) {
       print(e);
-      throw e;
+      print('Falling back to offline watermark activation');
+      return await ApiFallback.instance
+          .activateWatermark(email, refCode, secret);
     }
   }
 
@@ -69,7 +81,9 @@ class MyApi {
       return await _fetch(END_POINT_WATERMARK_SIGNATURE, params);
     } catch (e) {
       print(e);
-      throw e;
+      print('Falling back to offline signature generation');
+      return await ApiFallback.instance
+          .getWatermarkSignatureCode(email, secret);
     }
   }
 
@@ -96,7 +110,17 @@ class MyApi {
       return await _submit(END_POINT_WATERMARK_SAVELOG, params);
     } catch (e) {
       print(e);
-      throw e;
+      print('Falling back to offline log storage');
+      return await ApiFallback.instance.saveLog(
+        email,
+        fileName,
+        uuid,
+        signatureCode,
+        action,
+        type,
+        viewerSecret,
+        shareList,
+      );
     }
   }
 
@@ -109,7 +133,8 @@ class MyApi {
       return listAddress;
     } catch (e) {
       print(e);
-      throw e;
+      print('Falling back to offline contacts');
+      return await ApiFallback.instance.getUser();
     }
   }
 
@@ -123,7 +148,8 @@ class MyApi {
       return await _fetch(END_POINT_WATERMARK_UUID, params);
     } catch (e) {
       print(e);
-      throw e;
+      print('Falling back to offline UUID generation');
+      return await ApiFallback.instance.getUuid(refCode);
     }
   }
 
@@ -135,7 +161,8 @@ class MyApi {
       return await _fetch(END_POINT_WATERMARK_CHECKDECRYPT, params);
     } catch (e) {
       print(e);
-      throw e;
+      print('Falling back to offline decrypt check');
+      return await ApiFallback.instance.getCheckDecrypt(email, uuid);
     }
   }
 
@@ -150,7 +177,8 @@ class MyApi {
       return log;
     } catch (e) {
       print(e);
-      throw e;
+      print('Falling back to offline log history');
+      return await ApiFallback.instance.getLog(email);
     }
   }
 
@@ -167,7 +195,8 @@ class MyApi {
       return shareLog;
     } catch (e) {
       print(e);
-      throw e;
+      print('Falling back to offline share history');
+      return await ApiFallback.instance.getShareLog(id);
     }
   }
 }
