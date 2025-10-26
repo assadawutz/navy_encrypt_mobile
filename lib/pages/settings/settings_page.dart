@@ -16,6 +16,7 @@ import 'package:navy_encrypt/common/my_dialog.dart';
 import 'package:navy_encrypt/common/my_form_field.dart';
 import 'package:navy_encrypt/common/my_state.dart';
 import 'package:navy_encrypt/common/widget_view.dart';
+import 'package:navy_encrypt/core/io_helper.dart';
 import 'package:navy_encrypt/etc/constants.dart';
 import 'package:navy_encrypt/etc/extensions.dart';
 import 'package:navy_encrypt/etc/file_util.dart';
@@ -23,7 +24,6 @@ import 'package:navy_encrypt/etc/utils.dart';
 import 'package:navy_encrypt/navy_encryption/watermark.dart';
 import 'package:navy_encrypt/services/api.dart';
 import 'package:navy_encrypt/storage/prefs.dart';
-import 'package:open_file/open_file.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 part 'settings_page_view.dart';
@@ -354,19 +354,19 @@ class _SettingsPageController extends MyState<SettingsPage> {
       print("URL ${Constants.API_BASE_URL + '/manual?doctype=' + docType}");
       print(res.statusCode);
       if (res.statusCode == 200) {
-        await FileUtil.createFileFromBytes(
+        final manual = await FileUtil.createFileFromBytes(
           'UserManual.pdf',
           res.bodyBytes,
-        ).then((manual) {
-          OpenFile.open(manual.path).then((result) {
-            if (result.type == ResultType.noAppToOpen) {
-              throw Exception('ไม่พบโปรแกรมเปิดอ่านไฟล์คู่มือ!');
-            }
-          });
-        });
+        );
+        if (manual == null) {
+          throw Exception('ไม่สามารถสร้างไฟล์คู่มือได้!');
+        }
+        await IOHelper.preview(manual);
       } else {
         throw Exception('ไม่สามารถเรียกข้อมูลคู่มือได้!');
       }
+    } on IOHelperException catch (error) {
+      showOkDialog(context, 'ผิดพลาด', textContent: error.message);
     } catch (ex) {
       showOkDialog(context, 'ผิดพลาด', textContent: ex.toString());
     }

@@ -35,12 +35,10 @@ import 'package:navy_encrypt/pages/cloud_picker/onedrive.dart';
 import 'package:navy_encrypt/pages/encryption/encryption_page.dart';
 import 'package:navy_encrypt/services/api.dart';
 import 'package:navy_encrypt/storage/prefs.dart';
-import 'package:open_file/open_file.dart';
 import 'package:path/path.dart' as p;
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
-import 'package:share_plus/share_plus.dart';
 import 'package:navy_encrypt/core/perm_guard.dart';
 
 part 'result_page_view.dart';
@@ -557,20 +555,18 @@ class _ResultPageController extends MyState<ResultPage> {
         return;
       }
 
-      final xFile = XFile(file.path);
-      if (await isIpad()) {
-        await Share.shareXFiles(
-          [xFile],
-          sharePositionOrigin: Rect.fromLTWH(
-            0,
-            0,
-            screenWidth(context),
-            screenHeight(context) / 2,
-          ),
-        );
-      } else {
-        await IOHelper.shareFile(file);
-      }
+      final shareOrigin = await isIpad()
+          ? Rect.fromLTWH(
+              0,
+              0,
+              screenWidth(context),
+              screenHeight(context) / 2,
+            )
+          : null;
+      await IOHelper.shareFile(
+        file,
+        sharePositionOrigin: shareOrigin,
+      );
     } catch (error) {
       _showSnackBar('เกิดข้อผิดพลาด: ${error.toString()}');
     }
@@ -583,10 +579,9 @@ class _ResultPageController extends MyState<ResultPage> {
     }
 
     try {
-      final result = await OpenFile.open(file.path);
-      if (result.type == ResultType.noAppToOpen) {
-        _showSnackBar('ไม่พบแอปที่ใช้เปิดไฟล์ประเภทนี้');
-      }
+      await IOHelper.preview(file);
+    } on IOHelperException catch (error) {
+      _showSnackBar(error.message);
     } catch (error) {
       _showSnackBar('เกิดข้อผิดพลาด: ${error.toString()}');
     }
