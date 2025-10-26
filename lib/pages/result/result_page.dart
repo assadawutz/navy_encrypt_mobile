@@ -19,6 +19,7 @@ import 'package:navy_encrypt/common/my_state.dart';
 import 'package:navy_encrypt/common/widget_view.dart';
 import 'package:navy_encrypt/core/crypto_flow.dart';
 import 'package:navy_encrypt/core/io_helper.dart';
+import 'package:navy_encrypt/core/result_file_resolver.dart';
 import 'package:navy_encrypt/etc/constants.dart';
 import 'package:navy_encrypt/etc/file_util.dart';
 import 'package:navy_encrypt/etc/utils.dart';
@@ -1008,30 +1009,16 @@ class _ResultPageController extends MyState<ResultPage> {
   }
 
   Future<File> _resolveResultFile() async {
-    final candidates = <String>[_fileEncryptPath, _filePath]
-        .where((path) => path != null && path.isNotEmpty)
-        .toList();
+    final resolution = await ResultFileResolver.resolve(
+      <String>[_fileEncryptPath, _filePath],
+    );
 
-    if (candidates.isEmpty) {
-      _showSnackBar('ไม่พบไฟล์');
-      return null;
+    if (resolution.file != null) {
+      return resolution.file;
     }
 
-    for (final path in candidates) {
-      try {
-        final file = File(path);
-        await CryptoFlow.validateFile(file);
-        return file;
-      } on CryptoFlowException catch (error) {
-        _showSnackBar(error.message);
-        return null;
-      } catch (error) {
-        _showSnackBar('เกิดข้อผิดพลาด: ${error.toString()}');
-        return null;
-      }
-    }
-
-    _showSnackBar('ไม่พบไฟล์');
+    final message = resolution.errorMessage ?? 'ไม่พบไฟล์';
+    _showSnackBar(message);
     return null;
   }
 
