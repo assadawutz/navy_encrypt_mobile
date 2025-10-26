@@ -6,17 +6,53 @@ class PermGuard {
   const PermGuard._();
 
   static Future<void> ensure() async {
-    if (Platform.isAndroid) {
-      await [Permission.photos, Permission.videos, Permission.storage, Permission.camera].request();
-    } else if (Platform.isIOS || Platform.isMacOS) {
-      await [Permission.photos, Permission.camera].request();
+    final permissions = _defaultPermissions();
+    if (permissions.isEmpty) {
+      return;
     }
+    await _requestPermissions(permissions);
   }
 
   static Future<bool> ensurePickerAccess({
     bool images = true,
     bool videos = true,
   }) async {
+    final permissions = _pickerPermissions(images: images, videos: videos);
+    if (permissions.isEmpty) {
+      return true;
+    }
+    return _requestPermissions(permissions);
+  }
+
+  static Future<bool> ensureCameraAccess() async {
+    final permissions = _cameraPermissions();
+    if (permissions.isEmpty) {
+      return true;
+    }
+    return _requestPermissions(permissions);
+  }
+
+  static Set<Permission> _defaultPermissions() {
+    if (Platform.isAndroid) {
+      return {
+        Permission.photos,
+        Permission.videos,
+        Permission.storage,
+        Permission.camera,
+      };
+    }
+
+    if (Platform.isIOS || Platform.isMacOS) {
+      return {Permission.photos, Permission.camera};
+    }
+
+    return <Permission>{};
+  }
+
+  static Set<Permission> _pickerPermissions({
+    bool images = true,
+    bool videos = true,
+  }) {
     final permissions = <Permission>{};
 
     if (Platform.isAndroid) {
@@ -40,19 +76,22 @@ class PermGuard {
       }
     }
 
-    if (permissions.isEmpty) {
-      return true;
-    }
-
-    final statuses = await permissions.request();
-    return statuses.values.every((status) => status.isGranted || status.isLimited);
+    return permissions;
   }
 
-  static Future<bool> ensureCameraAccess() async {
+  static Set<Permission> _cameraPermissions() {
     final permissions = <Permission>{Permission.camera};
     if (Platform.isIOS || Platform.isAndroid) {
       permissions.add(Permission.microphone);
     }
+    return permissions;
+  }
+
+  static Future<bool> _requestPermissions(Set<Permission> permissions) async {
+    if (permissions == null || permissions.isEmpty) {
+      return true;
+    }
+
     final statuses = await permissions.request();
     return statuses.values.every((status) => status.isGranted || status.isLimited);
   }
