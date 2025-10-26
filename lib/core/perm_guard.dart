@@ -5,6 +5,14 @@ import 'package:permission_handler/permission_handler.dart';
 class PermGuard {
   const PermGuard._();
 
+  static Future<void> ensure() async {
+    if (Platform.isAndroid) {
+      await [Permission.photos, Permission.videos, Permission.storage, Permission.camera].request();
+    } else if (Platform.isIOS || Platform.isMacOS) {
+      await [Permission.photos, Permission.camera].request();
+    }
+  }
+
   static Future<bool> ensurePickerAccess({
     bool images = true,
     bool videos = true,

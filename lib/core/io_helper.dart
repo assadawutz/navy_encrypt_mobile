@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:ui' show Rect;
 
 import 'package:open_filex/open_filex.dart';
 import 'package:path/path.dart' as p;
@@ -61,6 +62,17 @@ class IOHelper {
     return target.writeAsBytes(bytes, flush: true);
   }
 
+  static Future<File> saveBytes(String filename, List<int> bytes) async {
+    if (bytes == null || bytes.isEmpty) {
+      throw const IOHelperException('ไม่พบข้อมูลไฟล์');
+    }
+
+    final sanitizedName = _resolveFileName(filename);
+    final docDir = await getApplicationDocumentsDirectory();
+    final target = await _createUniqueFile(docDir, sanitizedName);
+    return target.writeAsBytes(bytes, flush: true);
+  }
+
   static Future<File> copyToWorkspace(
     File source, {
     String preferredName,
@@ -109,7 +121,8 @@ class IOHelper {
   static Future<File> copyToWorkspaceFile(
     File source, {
     String preferredName,
-  }) => copyToWorkspace(source, preferredName: preferredName);
+  }) =>
+      copyToWorkspace(source, preferredName: preferredName);
 
   static Future<File> renameWithTimestamp(
     File file, {
@@ -175,10 +188,19 @@ class IOHelper {
     await OpenFilex.open(file.path);
   }
 
-  static Future<void> shareFile(File file) async {
+  static Future<void> shareFile(
+    File file, {
+    Rect sharePositionOrigin,
+  }) async {
     if (file == null) {
       throw const IOHelperException('ไม่พบไฟล์สำหรับแชร์');
     }
-    await Share.shareXFiles([XFile(file.path)]);
+    if (!await file.exists()) {
+      throw const IOHelperException('ไม่พบไฟล์สำหรับแชร์');
+    }
+    await Share.shareXFiles(
+      [XFile(file.path)],
+      sharePositionOrigin: sharePositionOrigin,
+    );
   }
 }

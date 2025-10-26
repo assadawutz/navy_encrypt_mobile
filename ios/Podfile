@@ -1,55 +1,27 @@
-# Define a global platform for your project
-platform :ios, '15.6'
-
+platform :ios, '12.0'
 ENV['COCOAPODS_DISABLE_STATS'] = 'true'
-
-project 'Runner', {
-  'Debug' => :debug,
-  'Profile' => :release,
-  'Release' => :release,
-}
+project 'Runner', { 'Debug' => :debug, 'Profile' => :release, 'Release' => :release }
 
 def flutter_root
-  generated_xcode_build_settings_path = File.expand_path(File.join('..', 'Flutter', 'Generated.xcconfig'), __FILE__)
-  unless File.exist?(generated_xcode_build_settings_path)
-    raise "#{generated_xcode_build_settings_path} must exist. If you're running pod install manually, make sure flutter pub get is executed first"
-  end
-  File.foreach(generated_xcode_build_settings_path) do |line|
-    matches = line.match(/FLUTTER_ROOT\=(.*)/)
-    return matches[1].strip if matches
-  end
-  raise "FLUTTER_ROOT not found in #{generated_xcode_build_settings_path}. Try deleting Generated.xcconfig, then run flutter pub get"
+  g = File.expand_path(File.join('..','Flutter','Generated.xcconfig'), __FILE__)
+  raise "#{g} must exist. Run 'flutter pub get' first." unless File.exist?(g)
+  File.foreach(g){|l| m=l.match(/FLUTTER_ROOT\=(.*)/); return m[1].strip if m }
+  raise "FLUTTER_ROOT not found."
 end
 
-require File.expand_path(File.join('packages', 'flutter_tools', 'bin', 'podhelper'), flutter_root)
-
-flutter_ios_podfile_setup
+require File.expand_path(File.join(flutter_root,'packages','flutter_tools','bin','podhelper.rb'))
+flutter_ios_podfile_setup if defined?(flutter_ios_podfile_setup)
+install! 'cocoapods', :generate_multiple_pod_projects => false
 
 target 'Runner' do
-  use_frameworks!
+  use_frameworks! :linkage => :static
   use_modular_headers!
-
   flutter_install_all_ios_pods File.dirname(File.realpath(__FILE__))
-end
-
-post_install do |installer|
-  installer.generated_projects.each do |project|
-    project.targets.each do |target|
-      target.build_configurations.each do |config|
-        config.build_settings.delete 'IPHONEOS_DEPLOYMENT_TARGET'
-        config.build_settings['ENABLE_USER_SCRIPT_SANDBOXING'] = 'NO'
-        config.build_settings['DEVELOPMENT_TEAM'] = 'BA93FUXZ6S'
-
-
-      end
-    end
-  end
-
-  installer.pods_project.targets.each do |target|
-    flutter_additional_ios_build_settings(target)
-    target.build_phases.each do |phase|
-      if phase.respond_to?(:name) && ['Thin Binary', 'Run Script'].include?(phase.name)
-        phase.run_only_for_deployment_postprocessing = false
+  post_install do |installer|
+    installer.pods_project.targets.each do |t|
+      t.build_configurations.each do |c|
+        c.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '12.0'
+        c.build_settings['EXCLUDED_ARCHS[sdk=iphonesimulator*]'] = 'i386'
       end
     end
   end

@@ -21,6 +21,7 @@ import 'package:navy_encrypt/common/widget_view.dart';
 import 'package:navy_encrypt/etc/constants.dart';
 import 'package:navy_encrypt/etc/file_size.dart';
 import 'package:navy_encrypt/etc/thai_date.dart';
+import 'package:navy_encrypt/core/io_helper.dart';
 import 'package:navy_encrypt/etc/utils.dart';
 import 'package:navy_encrypt/helpers/measure_size.dart';
 import 'package:navy_encrypt/models/cloud_file.dart';
@@ -34,7 +35,6 @@ import 'package:navy_encrypt/pages/encryption/encryption_page.dart';
 import 'package:navy_encrypt/services/api.dart';
 import 'package:navy_encrypt/storage/prefs.dart';
 import 'package:path/path.dart' as p;
-import 'package:share_plus/share_plus.dart';
 
 part 'cloud_picker_page_view.dart';
 
@@ -429,18 +429,33 @@ class _CloudPickerPageController extends MyState<CloudPickerPage> {
   }
 
   _handleClickShareButton(String filePath) async {
-    if (await isIpad()) {
-      Share.shareFiles(
-        [filePath],
-        sharePositionOrigin: Rect.fromLTWH(
-          0,
-          0,
-          screenWidth(context),
-          screenHeight(context) / 2,
-        ),
+    final file = File(filePath);
+    try {
+      if (await isIpad()) {
+        await IOHelper.shareFile(
+          file,
+          sharePositionOrigin: Rect.fromLTWH(
+            0,
+            0,
+            screenWidth(context),
+            screenHeight(context) / 2,
+          ),
+        );
+      } else {
+        await IOHelper.shareFile(file);
+      }
+    } on IOHelperException catch (error) {
+      showOkDialog(
+        context,
+        'ผิดพลาด',
+        textContent: error.message,
       );
-    } else {
-      Share.shareFiles([filePath]);
+    } catch (error) {
+      showOkDialog(
+        context,
+        'ผิดพลาด',
+        textContent: error.toString(),
+      );
     }
   }
 
