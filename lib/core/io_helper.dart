@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:ui' show Rect;
 
 import 'package:open_filex/open_filex.dart';
 import 'package:path/path.dart' as p;
@@ -61,6 +62,17 @@ class IOHelper {
     return target.writeAsBytes(bytes, flush: true);
   }
 
+  static Future<File> saveBytes(String filename, List<int> bytes) async {
+    if (bytes == null || bytes.isEmpty) {
+      throw const IOHelperException('ไม่พบข้อมูลไฟล์');
+    }
+
+    final sanitizedName = _resolveFileName(filename);
+    final docDir = await ensureDocDir();
+    final target = await _createUniqueFile(docDir, sanitizedName);
+    return target.writeAsBytes(bytes, flush: true);
+  }
+
   static Future<File> copyToWorkspace(
     File source, {
     String preferredName,
@@ -109,7 +121,8 @@ class IOHelper {
   static Future<File> copyToWorkspaceFile(
     File source, {
     String preferredName,
-  }) => copyToWorkspace(source, preferredName: preferredName);
+  }) =>
+      copyToWorkspace(source, preferredName: preferredName);
 
   static Future<File> renameWithTimestamp(
     File file, {
@@ -172,13 +185,52 @@ class IOHelper {
     if (file == null) {
       throw const IOHelperException('ไม่พบไฟล์สำหรับเปิดดู');
     }
-    await OpenFilex.open(file.path);
+    if (!await file.exists()) {
+      throw const IOHelperException('ไม่พบไฟล์สำหรับเปิดดู');
+    }
+
+    try {
+      final result = await OpenFilex.open(file.path);
+      switch (result.type) {
+        case ResultType.done:
+          return;
+        case ResultType.noAppToOpen:
+          throw const IOHelperException('ไม่พบแอปที่ใช้เปิดไฟล์ประเภทนี้');
+        case ResultType.permissionDenied:
+          throw const IOHelperException('ไม่ได้รับสิทธิ์ให้เปิดไฟล์นี้');
+        case ResultType.fileNotFound:
+          throw const IOHelperException('ไม่พบไฟล์สำหรับเปิดดู');
+        case ResultType.error:
+        default:
+          final details = result.message?.trim();
+          final suffix = (details != null && details.isNotEmpty) ? ': $details' : '';
+          throw IOHelperException('เปิดไฟล์ไม่สำเร็จ$suffix');
+      }
+    } catch (error) {
+      if (error is IOHelperException) {
+        rethrow;
+      }
+      throw IOHelperException('เปิดไฟล์ไม่สำเร็จ: ${error.toString()}');
+    }
   }
 
-  static Future<void> shareFile(File file) async {
+  static Future<void> shareFile(
+    File file, {
+    Rect sharePositionOrigin,
+  }) async {
     if (file == null) {
       throw const IOHelperException('ไม่พบไฟล์สำหรับแชร์');
     }
-    await Share.shareXFiles([XFile(file.path)]);
+    if (!await file.exists()) {
+      throw const IOHelperException('ไม่พบไฟล์สำหรับแชร์');
+    }
+    try {
+      await Share.shareXFiles(
+        [XFile(file.path)],
+        sharePositionOrigin: sharePositionOrigin,
+      );
+    } catch (error) {
+      throw IOHelperException('แชร์ไฟล์ไม่สำเร็จ: ${error.toString()}');
+    }
   }
 }
