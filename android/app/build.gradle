@@ -26,7 +26,21 @@ def keystoreProperties = new Properties()
 def keystorePropertiesFile = rootProject.file('key.properties')
 if (keystorePropertiesFile.exists()) {
     keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
+} else {
+    def env = { key ->
+        def value = System.getenv(key)
+        return value != null && value.trim().length() > 0 ? value.trim() : null
+    }
+    keystoreProperties['storeFile'] = env('ANDROID_KEYSTORE_PATH')
+    keystoreProperties['storePassword'] = env('ANDROID_KEYSTORE_PASSWORD')
+    keystoreProperties['keyAlias'] = env('ANDROID_KEY_ALIAS')
+    keystoreProperties['keyPassword'] = env('ANDROID_KEY_PASSWORD')
 }
+
+def hasSigningConfig = keystoreProperties['storeFile'] &&
+        keystoreProperties['storePassword'] &&
+        keystoreProperties['keyAlias'] &&
+        keystoreProperties['keyPassword']
 
 apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
@@ -51,10 +65,11 @@ android {
 
     signingConfigs {
         release {
-            if (keystorePropertiesFile.exists()) {
+            if (hasSigningConfig) {
                 keyAlias keystoreProperties['keyAlias']
                 keyPassword keystoreProperties['keyPassword']
-                storeFile keystoreProperties['storeFile'] ? file(keystoreProperties['storeFile']) : null
+                def storeFilePath = keystoreProperties['storeFile']
+                storeFile storeFilePath ? file(storeFilePath) : null
                 storePassword keystoreProperties['storePassword']
             }
         }
@@ -62,7 +77,7 @@ android {
 
     buildTypes {
         release {
-            signingConfig keystorePropertiesFile.exists() ? signingConfigs.release : signingConfigs.debug
+            signingConfig hasSigningConfig ? signingConfigs.release : signingConfigs.debug
 
         }
     }
@@ -105,4 +120,8 @@ dependencies {
     implementation 'androidx.multidex:multidex:2.0.1'
 }
 
-apply plugin: 'com.google.gms.google-services'
+if (file("google-services.json").exists()) {
+    apply plugin: 'com.google.gms.google-services'
+} else {
+    logger.lifecycle("[navy_encrypt] google-services.json not found in ${projectDir}, skipping Google Services plugin for this build.")
+}

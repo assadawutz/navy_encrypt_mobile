@@ -1,0 +1,9 @@
+// Example signing configuration for navy_encrypt_mobile.
+// Duplicate this file as `ios/Signing.xcconfig` and fill in the values before building.
+// The actual `Signing.xcconfig` should not be committed to source control.
+
+PRODUCT_BUNDLE_IDENTIFIER = th.mi.navy.navy-encrypt
+DEVELOPMENT_TEAM = ABC1234567
+CODE_SIGN_STYLE = Manual
+CODE_SIGN_IDENTITY = iPhone Distribution
+PROVISIONING_PROFILE_SPECIFIER = NavyEncrypt_Enterprise
