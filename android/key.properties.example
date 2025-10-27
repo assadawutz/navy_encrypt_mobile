@@ -1,0 +1,8 @@
+# Example keystore configuration for navy_encrypt_mobile.
+# Copy this file to `android/key.properties` and provide your secure values.
+# These values are read by build.gradle and may be overridden by environment variables.
+
+storeFile=/absolute/path/to/keystore.jks
+storePassword=STORE_PASSWORD
+keyAlias=KEY_ALIAS
+keyPassword=KEY_PASSWORD
