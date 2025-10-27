@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io';
+import 'dart:ui' show Rect;
 
 import 'package:navy_encrypt/core/perm_guard.dart';
 import 'package:navy_encrypt/core/platform_guard.dart';
