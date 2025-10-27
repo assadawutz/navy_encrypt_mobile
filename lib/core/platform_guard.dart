@@ -16,8 +16,7 @@ class PlatformGuard {
 
   static const _supportedMessage = 'แพลตฟอร์มนี้ยังไม่รองรับ';
 
-  static bool get _isDesktop =>
-      Platform.isWindows || Platform.isMacOS || Platform.isLinux;
+  static bool get _isDesktop => Platform.isWindows || Platform.isMacOS;
   static bool get _isMobile => Platform.isAndroid || Platform.isIOS;
 
   static bool get _isSupported => !_isWeb && (_isDesktop || _isMobile);
