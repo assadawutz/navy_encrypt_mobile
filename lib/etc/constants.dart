@@ -34,6 +34,51 @@ class Constants {
       iconData: FontAwesomeIcons.filePdf,
       iconColor: Colors.redAccent,
     ),
+    const MyFileType(
+      fileExtension: 'doc',
+      mimeType: 'application/msword',
+      iconData: FontAwesomeIcons.fileWord,
+      iconColor: Colors.blue,
+    ),
+    const MyFileType(
+      fileExtension: 'docx',
+      mimeType:
+          'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      iconData: FontAwesomeIcons.fileWord,
+      iconColor: Colors.blue,
+    ),
+    const MyFileType(
+      fileExtension: 'xls',
+      mimeType: 'application/vnd.ms-excel',
+      iconData: FontAwesomeIcons.fileExcel,
+      iconColor: Colors.green,
+    ),
+    const MyFileType(
+      fileExtension: 'xlsx',
+      mimeType:
+          'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      iconData: FontAwesomeIcons.fileExcel,
+      iconColor: Colors.green,
+    ),
+    const MyFileType(
+      fileExtension: 'ppt',
+      mimeType: 'application/vnd.ms-powerpoint',
+      iconData: FontAwesomeIcons.filePowerpoint,
+      iconColor: Colors.orange,
+    ),
+    const MyFileType(
+      fileExtension: 'pptx',
+      mimeType:
+          'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+      iconData: FontAwesomeIcons.filePowerpoint,
+      iconColor: Colors.orange,
+    ),
+    const MyFileType(
+      fileExtension: 'txt',
+      mimeType: 'text/plain',
+      iconData: FontAwesomeIcons.fileAlt,
+      iconColor: Colors.blueGrey,
+    ),
   ];
 
   static const List<MyFileType> imageFileTypeList = [
@@ -80,51 +125,6 @@ class Constants {
       fileExtension: 'mov',
       mimeType: 'video/quicktime',
       iconData: FontAwesomeIcons.fileVideo,
-      iconColor: Colors.blueGrey,
-    ),
-    const MyFileType(
-      fileExtension: 'doc',
-      mimeType: 'application/msword',
-      iconData: FontAwesomeIcons.fileWord,
-      iconColor: Colors.blue,
-    ),
-    const MyFileType(
-      fileExtension: 'docx',
-      mimeType:
-          'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-      iconData: FontAwesomeIcons.fileWord,
-      iconColor: Colors.blue,
-    ),
-    const MyFileType(
-      fileExtension: 'xls',
-      mimeType: 'application/vnd.ms-excel',
-      iconData: FontAwesomeIcons.fileExcel,
-      iconColor: Colors.green,
-    ),
-    const MyFileType(
-      fileExtension: 'xlsx',
-      mimeType:
-          'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-      iconData: FontAwesomeIcons.fileExcel,
-      iconColor: Colors.green,
-    ),
-    const MyFileType(
-      fileExtension: 'ppt',
-      mimeType: 'application/vnd.ms-powerpoint',
-      iconData: FontAwesomeIcons.filePowerpoint,
-      iconColor: Colors.orange,
-    ),
-    const MyFileType(
-      fileExtension: 'pptx',
-      mimeType:
-          'application/vnd.openxmlformats-officedocument.presentationml.presentation',
-      iconData: FontAwesomeIcons.filePowerpoint,
-      iconColor: Colors.orange,
-    ),
-    const MyFileType(
-      fileExtension: 'txt',
-      mimeType: 'text/plain',
-      iconData: FontAwesomeIcons.fileAlt,
       iconColor: Colors.blueGrey,
     ),
   ];
