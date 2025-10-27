@@ -54,7 +54,7 @@ fvm flutter test
 
 ## Debug build matrix (Android · iOS · Windows)
 
-Workflow [`debug.yml`](.github/workflows/debug.yml) runs on every push/PR against `main` and guarantees that all three target platforms compile in debug mode before we even think about release signing:
+Workflow [`debug.yml`](.github/workflows/debug.yml) runs on every push/PR against `work` or `main` and guarantees that all three target platforms compile in debug mode before we even think about release signing:
 
 1. **prepare** – Ubuntu runner installs Flutter 3.3.8 and executes `flutter analyze` to catch syntax issues fast.
 2. **android-debug** – Ubuntu runner builds `flutter build apk --debug` and publishes `app-debug.apk` as an artifact.
