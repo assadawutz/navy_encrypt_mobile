@@ -118,8 +118,3 @@ app.*.symbols
 !/packages/flutter_tools/test/data/dart_dependencies_test/**/.packages
 !/dev/ci/**/Gemfile.lock
 ios/Signing.xcconfig
-
-# Environment overrides (ปล่อย .env ตัวอย่างใน repo ได้ แต่กันไฟล์จริงตาม suffix)
-.env.local
-.env.production
-.env.secret

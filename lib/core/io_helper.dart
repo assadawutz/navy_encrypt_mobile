@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io';
+import 'dart:ui' show Rect;
 
 import 'package:navy_encrypt/core/perm_guard.dart';
 import 'package:navy_encrypt/core/platform_guard.dart';
@@ -49,8 +50,6 @@ class IOHelper {
       root = await getApplicationSupportDirectory();
     } else if (Platform.isWindows) {
       root = await (getDownloadsDirectory() ?? getApplicationDocumentsDirectory());
-    } else if (Platform.isLinux) {
-      root = await getApplicationDocumentsDirectory();
     } else {
       throw const IOHelperException('แพลตฟอร์มนี้ยังไม่รองรับ');
     }
@@ -62,33 +61,18 @@ class IOHelper {
     return directory;
   }
 
-  static Future<void> _ensureAndroidMediaAccess() async {
-    if (!Platform.isAndroid) {
-      return;
-    }
-
-    final granted = await PermGuard.ensurePickerAccess(
-      images: true,
-      videos: true,
-      audio: true,
-    );
-    if (!granted) {
-      throw const IOHelperException('ไม่สามารถเข้าถึงไฟล์สื่อได้');
-    }
-  }
-
   static Future<Directory> ensureWorkspaceDir() async {
-    await _ensureAndroidMediaAccess();
+    if (Platform.isAndroid) {
+      await PermGuard.ensure();
+    }
     return _ensureDirectory(_workspaceFolderName);
   }
 
   static Future<Directory> ensureResultDir() async {
-    await _ensureAndroidMediaAccess();
     return _ensureDirectory(_resultFolderName);
   }
 
   static Future<Directory> ensureDocDir() async {
-    await _ensureAndroidMediaAccess();
     return _ensureDirectory(_documentsFolderName);
   }
 
@@ -177,20 +161,15 @@ class IOHelper {
       throw const IOHelperException('ไม่พบไฟล์');
     }
 
-    String candidateName = fallbackName;
     if (path != null && path.trim().isNotEmpty) {
-      final sanitizedPath = path.trim();
-      final original = File(sanitizedPath);
-      if (await original.exists()) {
-        return copyToWorkspace(original);
-      }
-      candidateName ??= p.basename(sanitizedPath);
-      if (bytes == null || bytes.isEmpty) {
+      final original = File(path.trim());
+      if (!await original.exists()) {
         throw const IOHelperException('ไม่พบไฟล์');
       }
+      return copyToWorkspace(original);
     }
 
-    final sanitizedName = _sanitizeFileName(candidateName) ??
+    final sanitizedName = _sanitizeFileName(fallbackName) ??
         'file_${DateTime.now().millisecondsSinceEpoch}';
     return saveBytes(sanitizedName, bytes);
   }
@@ -227,25 +206,6 @@ class IOHelper {
       } catch (error) {
         throw IOHelperException(
             'ไม่สามารถเปิด File Explorer ได้: ${error.toString()}');
-      }
-      return;
-    }
-
-    if (Platform.isMacOS) {
-      try {
-        await Process.run('open', ['-R', file.path]);
-      } catch (error) {
-        throw IOHelperException('ไม่สามารถเปิด Finder ได้: ${error.toString()}');
-      }
-      return;
-    }
-
-    if (Platform.isLinux) {
-      try {
-        await Process.run('xdg-open', [file.parent.path]);
-      } catch (error) {
-        throw IOHelperException(
-            'ไม่สามารถเปิดไฟล์ในตัวจัดการไฟล์ได้: ${error.toString()}');
       }
       return;
     }

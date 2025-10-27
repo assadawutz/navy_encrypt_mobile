@@ -40,7 +40,6 @@ import 'package:path/path.dart' as p;
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
-import 'package:share_plus/share_plus.dart';
 import 'package:navy_encrypt/core/perm_guard.dart';
 
 part 'result_page_view.dart';
@@ -557,20 +556,18 @@ class _ResultPageController extends MyState<ResultPage> {
         return;
       }
 
-      final xFile = XFile(file.path);
-      if (await isIpad()) {
-        await Share.shareXFiles(
-          [xFile],
-          sharePositionOrigin: Rect.fromLTWH(
-            0,
-            0,
-            screenWidth(context),
-            screenHeight(context) / 2,
-          ),
-        );
-      } else {
-        await IOHelper.shareFile(file);
-      }
+      final shareOrigin = await isIpad()
+          ? Rect.fromLTWH(
+              0,
+              0,
+              screenWidth(context),
+              screenHeight(context) / 2,
+            )
+          : null;
+      await IOHelper.shareFile(
+        file,
+        sharePositionOrigin: shareOrigin,
+      );
     } catch (error) {
       _showSnackBar('เกิดข้อผิดพลาด: ${error.toString()}');
     }

@@ -1,7 +1,7 @@
 # Application Status Review
 
-- Date: 2024-05-28T14:45:00+07:00
-- Environment: Containerized Linux (Flutter SDK not installed inside this workspace)
+- Date: 2025-10-27T14:16:49Z
+- Environment: Containerized Linux (no Flutter SDK installed)
 
 ## Toolchain Snapshot
 - Flutter/Dart: Locked to 3.3.8 / 2.18.x via `.fvmrc` (install with `fvm install 3.3.8` on host; command unavailable here).
@@ -25,6 +25,6 @@ Source now guards storage permissions and platform-dependent IO before dispatchi
 5. Populate required secrets and dispatch the release workflow when ready for tagged artifacts.
 
 ## Notes
-- GitHub Actions `debug.yml` triggers on pushes/PRs targeting `main` and publishes debug artifacts for all three target platforms.
-- GitHub Actions `release.yml` remains available for manual dispatch or semantic tags once signing secrets are supplied.
-- Until Flutter and platform-specific toolchains are installed, runtime behaviour cannot be validated inside this container.
+- GitHub Actions now exposes two maintained workflows: `debug.yml` (push/PR on `main`, builds Android/iOS/Windows debug artifacts) and `release.yml` (push/tag on `main`, produces signed release artifacts when secrets exist). Verify their latest runs once Flutter tooling is available locally.
+- The helper script accepts SKIP_* flags (e.g., SKIP_TESTS=1, SKIP_WEB_BUILD=1) when specific stages must be bypassed temporarily during environment bring-up.
+- Until the Flutter toolchain is available, the application runtime state cannot be confirmed from this environment.
