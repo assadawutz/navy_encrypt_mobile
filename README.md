@@ -61,14 +61,3 @@ Releases follow [Semantic Versioning](https://semver.org/) and are documented in
 Keep the build metadata (`+<build-number>`) in sync with mobile store releases
 when applicable.
 
-## Optional tooling
-
-Install the one-click setup utilities provided by the FF2S team into `tools/FF2S.OneClick` with the helper script:
-
-```bash
-./install_ff2s_oneclick.sh [target-directory]
-```
-
-- The optional `target-directory` argument defaults to `tools/FF2S.OneClick`.
-- The script clones the upstream repository with shallow history.
-- Ensure outbound HTTPS access to `github.com` is permitted or run the script on a network without restrictive proxies.
