@@ -26,7 +26,7 @@ class _HomePageView extends WidgetView<HomePage, HomePageController> {
                   style: TextStyle(
                     color: Colors.white,
                     fontSize: DimensionUtil.isTallScreen(context) ? 34.0 : 28.0,
-                    shadows: [
+                    shadows: const [
                       Shadow(
                         offset: Offset(2.0, 2.0),
                         blurRadius: 4.0,
@@ -42,7 +42,7 @@ class _HomePageView extends WidgetView<HomePage, HomePageController> {
                     fontSize: DimensionUtil.isTallScreen(context) ? 22.0 : 20.0,
                     height: 0.9,
                     fontWeight: FontWeight.w400,
-                    shadows: [
+                    shadows: const [
                       Shadow(
                         offset: Offset(2.0, 2.0),
                         blurRadius: 4.0,
