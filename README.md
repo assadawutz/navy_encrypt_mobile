@@ -19,32 +19,16 @@
    fvm flutter pub get
    ```
 
-## Automated quality gates
+## Manual quality checks
 
-This repository ships with a comprehensive automation suite to protect the
-cryptographic workflow on every change.
-
-- **Static analysis** – `flutter analyze` runs on every push or pull request.
-- **Unit tests** – cover AES behaviour and the algorithm registry.
-- **Integration tests** – exercise file encryption end-to-end, including NAVEC
-  headers and UUID metadata handling.
-- **Build verification** – the CI pipeline assembles a debug Android APK to
-  catch integration issues early.
-
-Run the checks locally with FVM:
+Run these commands locally before pushing changes to make sure encryption logic
+stays healthy:
 
 ```bash
 fvm flutter analyze
 fvm flutter test
 fvm flutter build apk --debug
 ```
-
-## Continuous integration
-
-The CI workflow (`.github/workflows/ci.yml`) blocks merges unless all quality
-checks succeed. It provisions Flutter 3.3.8, restores dependencies, runs
-analysis and tests, then builds the Android debug artifact. Extend the workflow
-with additional jobs as new platforms are introduced.
 
 ## Release management
 
@@ -60,15 +44,3 @@ Releases follow [Semantic Versioning](https://semver.org/) and are documented in
 
 Keep the build metadata (`+<build-number>`) in sync with mobile store releases
 when applicable.
-
-## Optional tooling
-
-Install the one-click setup utilities provided by the FF2S team into `tools/FF2S.OneClick` with the helper script:
-
-```bash
-./install_ff2s_oneclick.sh [target-directory]
-```
-
-- The optional `target-directory` argument defaults to `tools/FF2S.OneClick`.
-- The script clones the upstream repository with shallow history.
-- Ensure outbound HTTPS access to `github.com` is permitted or run the script on a network without restrictive proxies.
