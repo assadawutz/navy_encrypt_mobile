@@ -77,18 +77,12 @@ class IOHelper {
     File source, {
     String preferredName,
   }) async {
-    if (source == null) {
-      throw const IOHelperException('ไม่พบไฟล์');
-    }
-
-    if (!await source.exists()) {
-      throw const IOHelperException('ไม่พบไฟล์');
-    }
-
     final workspace = await ensureWorkspaceDir();
-    final sanitizedName = _resolveFileName(preferredName ?? p.basename(source.path));
-    final destination = await _createUniqueFile(workspace, sanitizedName);
-    return source.copy(destination.path);
+    return _copyToDirectory(
+      source: source,
+      directory: workspace,
+      preferredName: preferredName,
+    );
   }
 
   static Future<File> resolveInput({
@@ -133,12 +127,35 @@ class IOHelper {
       throw const IOHelperException('ไม่พบไฟล์');
     }
 
-    final dir = p.dirname(file.path);
-    final base = prefix?.trim().isNotEmpty == true ? prefix.trim() : 'file';
-    final targetExtension = extension ?? p.extension(file.path);
-    final newName = '${base}_${DateTime.now().millisecondsSinceEpoch}$targetExtension';
-    final uniqueTarget = await _createUniqueFile(Directory(dir), newName);
+    final directory = Directory(p.dirname(file.path));
+    final sanitizedPrefix = prefix?.trim().isNotEmpty == true ? prefix.trim() : 'file';
+    final targetExtension = _normalizeExtension(extension ?? p.extension(file.path));
+    final timestamp = DateTime.now().millisecondsSinceEpoch;
+    final fileName = '${sanitizedPrefix}_${timestamp}$targetExtension';
+    final uniqueTarget = await _createUniqueFile(directory, fileName);
     return file.rename(uniqueTarget.path);
+  }
+
+  static Future<File> _copyToDirectory({
+    File source,
+    Directory directory,
+    String preferredName,
+  }) async {
+    if (source == null) {
+      throw const IOHelperException('ไม่พบไฟล์');
+    }
+
+    if (!await source.exists()) {
+      throw const IOHelperException('ไม่พบไฟล์');
+    }
+
+    if (directory == null) {
+      throw const IOHelperException('ไม่พบโฟลเดอร์ปลายทาง');
+    }
+
+    final sanitizedName = _resolveFileName(preferredName ?? p.basename(source.path));
+    final destination = await _createUniqueFile(directory, sanitizedName);
+    return source.copy(destination.path);
   }
 
   static Future<File> _createUniqueFile(Directory directory, String fileName) async {
@@ -179,6 +196,14 @@ class IOHelper {
       return '$fallback.bin';
     }
     return lastSegment;
+  }
+
+  static String _normalizeExtension(String extension) {
+    final sanitized = extension?.trim();
+    if (sanitized == null || sanitized.isEmpty) {
+      return '';
+    }
+    return sanitized.startsWith('.') ? sanitized : '.$sanitized';
   }
 
   static Future<void> preview(File file) async {
