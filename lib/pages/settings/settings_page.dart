@@ -16,6 +16,7 @@ import 'package:navy_encrypt/common/my_dialog.dart';
 import 'package:navy_encrypt/common/my_form_field.dart';
 import 'package:navy_encrypt/common/my_state.dart';
 import 'package:navy_encrypt/common/widget_view.dart';
+import 'package:navy_encrypt/core/io_helper.dart';
 import 'package:navy_encrypt/etc/constants.dart';
 import 'package:navy_encrypt/etc/extensions.dart';
 import 'package:navy_encrypt/etc/file_util.dart';
@@ -354,7 +355,7 @@ class _SettingsPageController extends MyState<SettingsPage> {
       print("URL ${Constants.API_BASE_URL + '/manual?doctype=' + docType}");
       print(res.statusCode);
       if (res.statusCode == 200) {
-        await FileUtil.createFileFromBytes(
+        final manual = await FileUtil.createFileFromBytes(
           'UserManual.pdf',
           res.bodyBytes,
         ).then((manual) {
@@ -367,6 +368,8 @@ class _SettingsPageController extends MyState<SettingsPage> {
       } else {
         throw Exception('ไม่สามารถเรียกข้อมูลคู่มือได้!');
       }
+    } on IOHelperException catch (error) {
+      showOkDialog(context, 'ผิดพลาด', textContent: error.message);
     } catch (ex) {
       showOkDialog(context, 'ผิดพลาด', textContent: ex.toString());
     }

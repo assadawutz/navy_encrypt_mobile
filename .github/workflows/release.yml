@@ -132,8 +132,8 @@ XCCONFIG
       - name: Install provisioning profile
         if: ${{ secrets.IOS_PROVISIONING_PROFILE_BASE64 != '' }}
         run: |
-          mkdir -p "$HOME/Library/MobileDevice/Provisioning Profiles"
-          echo "${{ secrets.IOS_PROVISIONING_PROFILE_BASE64 }}" | base64 --decode > "$HOME/Library/MobileDevice/Provisioning Profiles/navy_encrypt.mobileprovision"
+          mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
+          echo "${{ secrets.IOS_PROVISIONING_PROFILE_BASE64 }}" | base64 --decode > ~/Library/MobileDevice/Provisioning\ Profiles/navy_encrypt.mobileprovision
       - name: Flutter pub get
         run: flutter pub get
       - name: Build iOS IPA

@@ -34,9 +34,6 @@ The application reads runtime configuration through [`flutter_dotenv`](https://p
   - Android signing (`ANDROID_KEYSTORE_*`)
   - iOS signing (`IOS_BUNDLE_IDENTIFIER`, `IOS_TEAM_ID`, and provisioning values supplied through GitHub secrets)
   - Windows publisher metadata
-- Android builds automatically skip the Google Services Gradle plugin when `android/app/google-services.json` is missing. Drop
-  in the official file to enable Firebase/Auth integrations, otherwise the build will continue with stubbed configuration inste
-  ad of failing with the generic “Gradle build failed to produce an .apk file” message.
 
 When running in CI, GitHub secrets may provide an `ENV_FILE` blob that replaces `.env` entirely.
 
@@ -57,7 +54,7 @@ fvm flutter test
 
 ## Debug build matrix (Android · iOS · Windows)
 
-Workflow [`debug.yml`](.github/workflows/debug.yml) runs on every push/PR against `main` and guarantees that all three target platforms compile in debug mode before we even think about release signing:
+Workflow [`debug.yml`](.github/workflows/debug.yml) runs on every push/PR against `work` or `main` and guarantees that all three target platforms compile in debug mode before we even think about release signing:
 
 1. **prepare** – Ubuntu runner installs Flutter 3.3.8 and executes `flutter analyze` to catch syntax issues fast.
 2. **android-debug** – Ubuntu runner builds `flutter build apk --debug` and publishes `app-debug.apk` as an artifact.
