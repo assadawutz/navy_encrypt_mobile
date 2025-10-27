@@ -1,18 +1,34 @@
-name: Debug Build (FVM 3.3.8 Fix)
+name: Full Matrix Build (No Codesign IPA)
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - '**'
+  pull_request:
+    branches:
+      - '**'
 
 env:
   FLUTTER_VERSION: '3.3.8'
   FLUTTER_CHANNEL: 'stable'
 
 jobs:
-  android-debug:
+  linux-checks:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
+      - name: Cache pub cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.pub-cache
+            .fvm
+          key: linux-pub-${{ hashFiles('pubspec.lock') }}
+          restore-keys: |
+            linux-pub-
+
       - name: Install Dart SDK
         uses: dart-lang/setup-dart@v1
 
@@ -24,25 +40,49 @@ jobs:
           fvm --version
 
       - name: Setup Flutter via FVM
-        run: fvm install ${{ env.FLUTTER_VERSION }}
+        run: |
+          fvm install ${{ env.FLUTTER_VERSION }}
+          fvm use ${{ env.FLUTTER_VERSION }} --force
 
-      - name: Flutter pub get
-        run: fvm flutter pub get
+      - name: Run full check suite (no iOS)
+        env:
+          SKIP_IOS_BUILD: "1"
+          SKIP_WEB_BUILD: "1"
+        run: |
+          chmod +x tools/run-all-checks.sh
+          ./tools/run-all-checks.sh --ci
 
-      - name: Build debug APK
-        run: fvm flutter build apk --debug
-
-      - name: Upload APK artifact
+      - name: Upload Android artifacts
+        if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: app-debug-apk
-          path: build/app/outputs/flutter-apk/app-debug.apk
+          name: android-release-artifacts
+          path: |
+            build/app/outputs/flutter-apk/*.apk
+            build/app/outputs/bundle/release/*.aab
 
-  ios-debug:
+      - name: Upload coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: flutter-test-coverage
+          path: coverage/
+
+  ios-no-codesign:
     runs-on: macos-14
     steps:
       - uses: actions/checkout@v4
 
+      - name: Cache pub cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.pub-cache
+            .fvm
+          key: macos-pub-${{ hashFiles('pubspec.lock') }}
+          restore-keys: |
+            macos-pub-
+
       - name: Install Dart SDK
         uses: dart-lang/setup-dart@v1
 
@@ -54,34 +94,26 @@ jobs:
           fvm --version
 
       - name: Setup Flutter via FVM
-        run: fvm install ${{ env.FLUTTER_VERSION }}
+        run: |
+          fvm install ${{ env.FLUTTER_VERSION }}
+          fvm use ${{ env.FLUTTER_VERSION }} --force
 
-
-      - name: Flutter pub get
-        run: fvm flutter pub get
-
-      - name: Install CocoaPods
+      - name: Install CocoaPods dependencies
         run: |
           cd ios
           pod install --repo-update
 
-      - name: Set build version
+      - name: Run iOS build (no codesign)
+        env:
+          SKIP_ANDROID_BUILD: "1"
+          SKIP_WEB_BUILD: "1"
         run: |
-         echo "FLUTTER_BUILD_NAME=1.0.0" >> $GITHUB_ENV
-         echo "FLUTTER_BUILD_NUMBER=1" >> $GITHUB_ENV
-
-      - name: Build debug IPA
-        run: fvm flutter build ipa --no-pub --no-codesign
-
-      
-      - name: Archive .app to .ipa
-        run: |
-          mkdir -p build/ios/ipa
-          cd build/ios/iphonesimulator
-          zip -r Runner-debug.ipa Runner.app
+          chmod +x tools/run-all-checks.sh
+          ./tools/run-all-checks.sh --ci
 
       - name: Upload IPA artifact
+        if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: app-debug-ipa
-          path: build/ios/iphonesimulator/Runner-debug.ipa
+          name: ios-ipa-no-codesign
+          path: build/ios/ipa/*.ipa
