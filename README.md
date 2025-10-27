@@ -74,6 +74,8 @@ fvm flutter build ios --debug --no-codesign
 flutter build windows --debug
 ```
 
+For a step-by-step manual QA script that walks through every picker, permission guard, and result action across Android, iOS, and Windows, follow [`docs/manual_test_plan.md`](docs/manual_test_plan.md).
+
 ## Multi-platform build & release pipeline
 
 The release workflow (`.github/workflows/release.yml`) triggers on pushes to `main`, manual dispatch, or semver tags (`v*`). It executes the following matrix:
