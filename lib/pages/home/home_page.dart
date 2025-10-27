@@ -87,6 +87,18 @@ class HomePageController extends MyState<HomePage> {
 
   Future<void> _pickFile(BuildContext context) async {
     try {
+      if (Platform.isAndroid) {
+        final granted = await PermGuard.ensurePickerAccess(
+          images: true,
+          videos: true,
+          audio: true,
+        );
+        if (!granted) {
+          _showSnackBar('ไม่สามารถเข้าถึงไฟล์สื่อได้');
+          return;
+        }
+      }
+
       final result = await FilePicker.platform.pickFiles(
         withData: Platform.isIOS || Platform.isAndroid,
       );
@@ -357,9 +369,20 @@ class HomePageController extends MyState<HomePage> {
         final granted = await PermGuard.ensurePickerAccess(
           images: pickImage || !pickVideo,
           videos: pickVideo || !pickImage,
+          audio: !pickImage && !pickVideo,
         );
         if (!granted) {
           _showSnackBar('ไม่สามารถเข้าถึงไฟล์สื่อได้');
+          return;
+        }
+      } else if (Platform.isIOS && (pickImage || pickVideo)) {
+        final granted = await PermGuard.ensurePickerAccess(
+          images: pickImage,
+          videos: pickVideo,
+          audio: false,
+        );
+        if (!granted) {
+          _showSnackBar('ไม่สามารถเข้าถึงรูปภาพหรือวิดีโอได้');
           return;
         }
       }

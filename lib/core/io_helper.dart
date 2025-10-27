@@ -62,25 +62,33 @@ class IOHelper {
     return directory;
   }
 
-  static Future<Directory> ensureWorkspaceDir() async {
-    if (Platform.isAndroid) {
-      final granted = await PermGuard.ensurePickerAccess(
-        images: true,
-        videos: true,
-        audio: true,
-      );
-      if (!granted) {
-        throw const IOHelperException('ไม่สามารถเข้าถึงไฟล์สื่อได้');
-      }
+  static Future<void> _ensureAndroidMediaAccess() async {
+    if (!Platform.isAndroid) {
+      return;
     }
+
+    final granted = await PermGuard.ensurePickerAccess(
+      images: true,
+      videos: true,
+      audio: true,
+    );
+    if (!granted) {
+      throw const IOHelperException('ไม่สามารถเข้าถึงไฟล์สื่อได้');
+    }
+  }
+
+  static Future<Directory> ensureWorkspaceDir() async {
+    await _ensureAndroidMediaAccess();
     return _ensureDirectory(_workspaceFolderName);
   }
 
   static Future<Directory> ensureResultDir() async {
+    await _ensureAndroidMediaAccess();
     return _ensureDirectory(_resultFolderName);
   }
 
   static Future<Directory> ensureDocDir() async {
+    await _ensureAndroidMediaAccess();
     return _ensureDirectory(_documentsFolderName);
   }
 
