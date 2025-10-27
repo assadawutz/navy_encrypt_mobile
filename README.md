@@ -37,7 +37,7 @@ The application reads runtime configuration through [`flutter_dotenv`](https://p
 
 When running in CI, GitHub secrets may provide an `ENV_FILE` blob that replaces `.env` entirely.
 
-## Automated quality gates
+## Manual quality checks
 
 This repository ships with automation to protect the encryption workflow on every change.
 
@@ -77,11 +77,11 @@ flutter build windows --debug
 For a step-by-step manual QA script that walks through every picker, permission guard, and result action across Android, iOS, and Windows, follow [`docs/manual_test_plan.md`](docs/manual_test_plan.md).
 
 ## Multi-platform build & release pipeline
+1. **Lint job (Ubuntu)** – installs Flutter 3.3.8, runs `flutter analyze` and `flutter test`.
+2. **Android job (Ubuntu)** – decodes the signing 
 
 The release workflow (`.github/workflows/release.yml`) triggers on pushes to `main`, manual dispatch, or semver tags (`v*`). It executes the following matrix:
-
-1. **Lint job (Ubuntu)** – installs Flutter 3.3.8, runs `flutter analyze` and `flutter test`.
-2. **Android job (Ubuntu)** – decodes the signing keystore if secrets are present, builds a release APK, and uploads the artifact.
+keystore if secrets are present, builds a release APK, and uploads the artifact.
 3. **iOS job (macOS)** – configures signing via generated `Signing.xcconfig`, builds an IPA with the enterprise export plist, and uploads the artifact.
 4. **Windows job (Windows)** – seeds `.env`, invokes `tools/build_windows.ps1 -BuildMode release`, and archives both the runner and installer output.
 5. **Release job (Ubuntu)** – available on tags, aggregates artifacts, renders changelog notes, and publishes a GitHub Release.
