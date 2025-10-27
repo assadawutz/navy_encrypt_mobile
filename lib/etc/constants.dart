@@ -149,4 +149,48 @@ class Constants {
       iconColor: Colors.blueGrey,
     ),
   ];
+
+  static const List<MyFileType> etcFileTypeList = [
+    const MyFileType(
+      fileExtension: 'zip',
+      mimeType: 'application/zip',
+      iconData: FontAwesomeIcons.fileArchive,
+      iconColor: Colors.brown,
+    ),
+  ];
+
+  static const List<MyFileType> navecFileTypeList = [
+    const MyFileType(
+      fileExtension: 'enc',
+      mimeType: 'application/octet-stream',
+      iconData: FontAwesomeIcons.lock,
+      iconColor: Colors.blueGrey,
+    ),
+  ];
+
+  static const List<MyFileType> selectableFileTypeList = [
+    ...documentFileTypeList,
+    ...imageFileTypeList,
+    ...videoFileTypeList,
+    ...audioFileTypeList,
+    ...navecFileTypeList,
+    ...etcFileTypeList,
+  ];
+
+  static const unSupportedFileType = MyFileType(
+    fileExtension: '',
+    mimeType: '',
+    iconData: FontAwesomeIcons.solidFile,
+    iconColor: Colors.redAccent,
+  );
+
+  static const List<MyFileType> allFileTypeList = [
+    ...selectableFileTypeList,
+  ];
+
+  static List<String> get selectableMimeTypeList =>
+      selectableFileTypeList.map((fileType) => fileType.mimeType).toList();
+
+  static List<String> get selectableExtensionList =>
+      selectableFileTypeList.map((fileType) => fileType.fileExtension).toList();
 }
