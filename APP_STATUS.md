@@ -1,6 +1,6 @@
 # Application Status Review
 
-- Date: 2025-10-27T07:03:22Z
+- Date: 2025-10-27T14:16:49Z
 - Environment: Containerized Linux (no Flutter SDK installed)
 
 ## Toolchain Snapshot
@@ -21,6 +21,6 @@ The current container environment lacks the Flutter SDK, so automated analysis, 
 4. Perform manual QA on target devices/emulators to verify runtime behavior.
 
 ## Notes
-- GitHub Actions workflow ci.yml is configured to build Android and iOS artifacts without code signing. Review workflow runs to confirm latest status once Flutter tooling is available.
+- GitHub Actions now exposes two maintained workflows: `debug.yml` (push/PR on `main`, builds Android/iOS/Windows debug artifacts) and `release.yml` (push/tag on `main`, produces signed release artifacts when secrets exist). Verify their latest runs once Flutter tooling is available locally.
 - The helper script accepts SKIP_* flags (e.g., SKIP_TESTS=1, SKIP_WEB_BUILD=1) when specific stages must be bypassed temporarily during environment bring-up.
 - Until the Flutter toolchain is available, the application runtime state cannot be confirmed from this environment.
