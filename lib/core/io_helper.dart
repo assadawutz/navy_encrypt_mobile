@@ -49,6 +49,8 @@ class IOHelper {
       root = await getApplicationSupportDirectory();
     } else if (Platform.isWindows) {
       root = await (getDownloadsDirectory() ?? getApplicationDocumentsDirectory());
+    } else if (Platform.isLinux) {
+      root = await getApplicationDocumentsDirectory();
     } else {
       throw const IOHelperException('แพลตฟอร์มนี้ยังไม่รองรับ');
     }
@@ -205,6 +207,16 @@ class IOHelper {
       } catch (error) {
         throw IOHelperException(
             'ไม่สามารถเปิด File Explorer ได้: ${error.toString()}');
+      }
+      return;
+    }
+
+    if (Platform.isLinux) {
+      try {
+        await Process.run('xdg-open', [file.parent.path]);
+      } catch (error) {
+        throw IOHelperException(
+            'ไม่สามารถเปิดไฟล์ในตัวจัดการไฟล์ได้: ${error.toString()}');
       }
       return;
     }
