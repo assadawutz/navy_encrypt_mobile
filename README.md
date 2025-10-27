@@ -13,10 +13,10 @@
    ```bash
    fvm flutter pub get
    ```
-3. Configure the environment secrets by copying the sample file and adjusting to your workspace:
+3. Review `.env` (tracked with non-sensitive defaults) and adjust to match your local services. For custom overrides keep a private copy:
    ```bash
-   cp .env.example .env
-   # Fill in NAVY_API_BASE_URL, signing credentials, and platform identifiers
+   cp .env .env.local
+   # แก้ค่าเฉพาะเครื่องใน .env.local แล้วอย่าลืม merge กลับเมื่อ deploy
    ```
 4. (Optional) Regenerate any missing Flutter scaffolding before running:
    ```bash
@@ -50,6 +50,28 @@ Run the checks locally with FVM:
 ```bash
 fvm flutter analyze
 fvm flutter test
+```
+
+## Debug build matrix (Android · iOS · Windows)
+
+Workflow [`debug.yml`](.github/workflows/debug.yml) runs on every push/PR against `work` or `main` and guarantees that all three target platforms compile in debug mode before we even think about release signing:
+
+1. **prepare** – Ubuntu runner installs Flutter 3.3.8 and executes `flutter analyze` to catch syntax issues fast.
+2. **android-debug** – Ubuntu runner builds `flutter build apk --debug` and publishes `app-debug.apk` as an artifact.
+3. **ios-debug** – macOS runner executes `flutter build ios --debug --no-codesign`, proving the Xcode project is healthy without provisioning profiles.
+4. **windows-debug** – Windows runner runs `flutter build windows --debug` and archives the generated runner binaries.
+
+Use the outputs to smoke-test each platform locally:
+
+```bash
+# Android
+fvm flutter build apk --debug
+
+# iOS (ต้องรันบน macOS)
+fvm flutter build ios --debug --no-codesign
+
+# Windows (บน Windows)
+flutter build windows --debug
 ```
 
 ## Multi-platform build & release pipeline
