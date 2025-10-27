@@ -35,6 +35,7 @@ import 'package:navy_encrypt/pages/cloud_picker/onedrive.dart';
 import 'package:navy_encrypt/pages/encryption/encryption_page.dart';
 import 'package:navy_encrypt/services/api.dart';
 import 'package:navy_encrypt/storage/prefs.dart';
+import 'package:open_filex/open_filex.dart';
 import 'package:path/path.dart' as p;
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
@@ -579,9 +580,10 @@ class _ResultPageController extends MyState<ResultPage> {
     }
 
     try {
-      await IOHelper.preview(file);
-    } on IOHelperException catch (error) {
-      _showSnackBar(error.message);
+      final result = await OpenFilex.open(file.path);
+      if (result.type == ResultType.noAppToOpen) {
+        _showSnackBar('ไม่พบแอปที่ใช้เปิดไฟล์ประเภทนี้');
+      }
     } catch (error) {
       _showSnackBar('เกิดข้อผิดพลาด: ${error.toString()}');
     }

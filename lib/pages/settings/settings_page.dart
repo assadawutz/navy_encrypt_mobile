@@ -24,6 +24,7 @@ import 'package:navy_encrypt/etc/utils.dart';
 import 'package:navy_encrypt/navy_encryption/watermark.dart';
 import 'package:navy_encrypt/services/api.dart';
 import 'package:navy_encrypt/storage/prefs.dart';
+import 'package:open_filex/open_filex.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 part 'settings_page_view.dart';
@@ -357,11 +358,13 @@ class _SettingsPageController extends MyState<SettingsPage> {
         final manual = await FileUtil.createFileFromBytes(
           'UserManual.pdf',
           res.bodyBytes,
-        );
-        if (manual == null) {
-          throw Exception('ไม่สามารถสร้างไฟล์คู่มือได้!');
-        }
-        await IOHelper.preview(manual);
+        ).then((manual) {
+          OpenFilex.open(manual.path).then((result) {
+            if (result.type == ResultType.noAppToOpen) {
+              throw Exception('ไม่พบโปรแกรมเปิดอ่านไฟล์คู่มือ!');
+            }
+          });
+        });
       } else {
         throw Exception('ไม่สามารถเรียกข้อมูลคู่มือได้!');
       }
