@@ -2,8 +2,10 @@ import 'dart:async';
 import 'dart:io';
 import 'dart:io' show Platform;
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:navy_encrypt/etc/constants.dart';
 import 'package:navy_encrypt/etc/share_intent_handler.dart';
 import 'package:navy_encrypt/models/loading_message.dart';
@@ -38,6 +40,17 @@ Future<void> main(List<String> arguments) async {
   // get command-line arg in desktop app
   // if (Platform.isAndroid == true || Platform.isIOS == true) {
   WidgetsFlutterBinding.ensureInitialized();
+
+  try {
+    await dotenv.load(fileName: '.env');
+  } catch (error) {
+    debugPrint('⚠️ ไม่สามารถโหลดไฟล์ .env ได้: ' + error.toString());
+    try {
+      await dotenv.load(fileName: '.env.example');
+    } catch (fallbackError) {
+      debugPrint('⚠️ ไม่พบ .env.example: ' + fallbackError.toString());
+    }
+  }
   // await Firebase.initializeApp();
   // }
 
