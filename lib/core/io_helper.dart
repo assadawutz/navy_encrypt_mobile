@@ -64,7 +64,14 @@ class IOHelper {
 
   static Future<Directory> ensureWorkspaceDir() async {
     if (Platform.isAndroid) {
-      await PermGuard.ensure();
+      final granted = await PermGuard.ensurePickerAccess(
+        images: true,
+        videos: true,
+        audio: true,
+      );
+      if (!granted) {
+        throw const IOHelperException('ไม่สามารถเข้าถึงไฟล์สื่อได้');
+      }
     }
     return _ensureDirectory(_workspaceFolderName);
   }
@@ -162,15 +169,20 @@ class IOHelper {
       throw const IOHelperException('ไม่พบไฟล์');
     }
 
+    String candidateName = fallbackName;
     if (path != null && path.trim().isNotEmpty) {
-      final original = File(path.trim());
-      if (!await original.exists()) {
+      final sanitizedPath = path.trim();
+      final original = File(sanitizedPath);
+      if (await original.exists()) {
+        return copyToWorkspace(original);
+      }
+      candidateName ??= p.basename(sanitizedPath);
+      if (bytes == null || bytes.isEmpty) {
         throw const IOHelperException('ไม่พบไฟล์');
       }
-      return copyToWorkspace(original);
     }
 
-    final sanitizedName = _sanitizeFileName(fallbackName) ??
+    final sanitizedName = _sanitizeFileName(candidateName) ??
         'file_${DateTime.now().millisecondsSinceEpoch}';
     return saveBytes(sanitizedName, bytes);
   }
@@ -207,6 +219,15 @@ class IOHelper {
       } catch (error) {
         throw IOHelperException(
             'ไม่สามารถเปิด File Explorer ได้: ${error.toString()}');
+      }
+      return;
+    }
+
+    if (Platform.isMacOS) {
+      try {
+        await Process.run('open', ['-R', file.path]);
+      } catch (error) {
+        throw IOHelperException('ไม่สามารถเปิด Finder ได้: ${error.toString()}');
       }
       return;
     }
