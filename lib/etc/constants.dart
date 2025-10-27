@@ -1,27 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:navy_encrypt/core/env.dart';
 import 'package:navy_encrypt/models/my_file_type.dart';
 
 class Constants {
-  // static const NAVY_API_BASE_URL = 'http://203.147.19.219';
-  // static const NAVY_API_BASE_URL = 'http://192.168.1.102:3000';
-  // static const NAVY_API_BASE_URL = 'http://happyandparty.com:3000';
-  static const NAVY_API_BASE_URL = 'https://navenc.navy.mi.th/navy-api';
-
-  // static const NAVY_API_BASE_URL = 'https://navenc.navy.mi.th/navy-api';
-
-  // static const NAVY_API_BASE_URL = 'http://127.0.0.1:99';
-
-  static const API_BASE_URL =
-      NAVY_API_BASE_URL; // 'http://68.183.97.97:3001'; //droplet
-  //static const API_BASE_URL = 'http://192.168.1.4:3001';
-  //static const API_BASE_URL = 'http://10.0.2.2:3001';
-  static const API_CONVERT_DOC_TO_IMAGE_URL =
-      '$NAVY_API_BASE_URL/convert_to_image';
+  static String get NAVY_API_BASE_URL => Env.navyApiBaseUrl;
+  static String get API_BASE_URL => NAVY_API_BASE_URL;
+  static String get API_CONVERT_DOC_TO_IMAGE_URL =>
+      '${NAVY_API_BASE_URL}/convert_to_image';
 
   static const Color primaryColor = Color(0xff000080);
   static const Color test = Color(0xff000080);
-  static const Color accentColor = primaryColor; //Color(0xff0000cc);
+  static const Color accentColor = primaryColor;
   static const double horizontalMargin = 20.0;
   static const double verticalMargin = 20.0;
   static const String baseAssetPath = 'assets/';
@@ -37,8 +27,6 @@ class Constants {
   static const LIST_DIALOG_ICON_SIZE = 40.0;
   static const LIST_DIALOG_ICON_COLOR = Color(0xFF3EC2FF);
 
-  // ใส่ลายน้ำได้ แต่ต้องแปลงเป็นรูปภาพก่อน
-  // 'pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx'
   static const List<MyFileType> documentFileTypeList = [
     const MyFileType(
       fileExtension: 'pdf',
@@ -48,8 +36,6 @@ class Constants {
     ),
   ];
 
-  // ใส่ลายน้ำได้ทันที
-  // 'gif', 'png', 'jpg', 'jpeg'
   static const List<MyFileType> imageFileTypeList = [
     const MyFileType(
       fileExtension: 'gif',
@@ -77,8 +63,6 @@ class Constants {
     ),
   ];
 
-  // ใส่ลายน้ำไม่ได้
-  // 'mp4', 'mpeg', 'mov'
   static const List<MyFileType> videoFileTypeList = [
     const MyFileType(
       fileExtension: 'mp4',
@@ -145,8 +129,6 @@ class Constants {
     ),
   ];
 
-  // ใส่ลายน้ำไม่ได้
-  // 'mp3', 'wav', 'ogg
   static const List<MyFileType> audioFileTypeList = [
     const MyFileType(
       fileExtension: 'mp3',
@@ -167,50 +149,4 @@ class Constants {
       iconColor: Colors.blueGrey,
     ),
   ];
-
-  // ใส่ลายน้ำไม่ได้
-  static const List<MyFileType> etcFileTypeList = [
-    const MyFileType(
-      fileExtension: 'zip',
-      mimeType: 'application/zip',
-      iconData: FontAwesomeIcons.fileArchive,
-      iconColor: Colors.brown,
-    ),
-  ];
-
-  static const List<MyFileType> navecFileTypeList = [
-    const MyFileType(
-      fileExtension: 'enc',
-      mimeType: 'application/octet-stream',
-      iconData: FontAwesomeIcons.lock,
-      iconColor: Colors.blueGrey,
-    ),
-  ];
-
-  static const List<MyFileType> selectableFileTypeList = [
-    ...documentFileTypeList,
-    ...imageFileTypeList,
-    ...videoFileTypeList,
-    ...audioFileTypeList,
-    ...navecFileTypeList,
-    ...etcFileTypeList,
-  ];
-
-  static const unSupportedFileType = MyFileType(
-    fileExtension: '',
-    mimeType: '',
-    iconData: FontAwesomeIcons.solidFile,
-    iconColor: Colors.redAccent,
-  );
-
-  static const List<MyFileType> allFileTypeList = [
-    ...selectableFileTypeList,
-    //...archiveFileTypeList,
-  ];
-
-  static List<String> get selectableMimeTypeList =>
-      selectableFileTypeList.map((fileType) => fileType.mimeType).toList();
-
-  static List<String> get selectableExtensionList =>
-      selectableFileTypeList.map((fileType) => fileType.fileExtension).toList();
 }
