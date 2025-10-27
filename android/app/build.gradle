@@ -120,4 +120,8 @@ dependencies {
     implementation 'androidx.multidex:multidex:2.0.1'
 }
 
-apply plugin: 'com.google.gms.google-services'
+if (file("google-services.json").exists()) {
+    apply plugin: 'com.google.gms.google-services'
+} else {
+    logger.lifecycle("[navy_encrypt] google-services.json not found in ${projectDir}, skipping Google Services plugin for this build.")
+}
