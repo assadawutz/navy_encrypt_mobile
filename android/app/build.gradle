@@ -1,4 +1,6 @@
-def kotlin_version = rootProject.ext.kotlin_version
+ext {
+    kotlin_version = kotlin_version
+}
 def localProperties = new Properties()
 def localPropertiesFile = rootProject.file('local.properties')
 if (localPropertiesFile.exists()) {
@@ -9,7 +11,7 @@ if (localPropertiesFile.exists()) {
 
 def flutterRoot = localProperties.getProperty('flutter.sdk')
 if (flutterRoot == null) {
-    throw  GradleException("Flutter SDK not found. Define location with flutter.sdk in the local.properties file.")
+    throw new GradleException("Flutter SDK not found. Define location with flutter.sdk in the local.properties file.")
 }
 
 def flutterVersionCode = localProperties.getProperty('flutter.versionCode')
@@ -22,25 +24,16 @@ if (flutterVersionName == null) {
     flutterVersionName = '1.0'
 }
 
+apply plugin: 'com.android.application'
+apply plugin: 'kotlin-android'
+apply from: "$flutterRoot/packages/flutter_tools/gradle/flutter.gradle"
+
+
 def keystoreProperties = new Properties()
 def keystorePropertiesFile = rootProject.file('key.properties')
 if (keystorePropertiesFile.exists()) {
     keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
-} else {
-    def env = { key ->
-        def value = System.getenv(key)
-        return value != null && value.trim().length() > 0 ? value.trim() : null
-    }
-    keystoreProperties['storeFile'] = env('ANDROID_KEYSTORE_PATH')
-    keystoreProperties['storePassword'] = env('ANDROID_KEYSTORE_PASSWORD')
-    keystoreProperties['keyAlias'] = env('ANDROID_KEY_ALIAS')
-    keystoreProperties['keyPassword'] = env('ANDROID_KEY_PASSWORD')
 }
-
-def hasSigningConfig = keystoreProperties['storeFile'] &&
-        keystoreProperties['storePassword'] &&
-        keystoreProperties['keyAlias'] &&
-        keystoreProperties['keyPassword']
 
 apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
@@ -58,26 +51,23 @@ android {
         versionName flutterVersionName
         multiDexEnabled true
         versionNameSuffix '5'
-        vectorDrawables {
-            useSupportLibrary true
-        }
     }
 
     signingConfigs {
         release {
-            if (hasSigningConfig) {
+            if (keystorePropertiesFile.exists()) {
                 keyAlias keystoreProperties['keyAlias']
                 keyPassword keystoreProperties['keyPassword']
-                def storeFilePath = keystoreProperties['storeFile']
-                storeFile storeFilePath ? file(storeFilePath) : null
+                storeFile keystoreProperties['storeFile'] ? file(keystoreProperties['storeFile']) : null
                 storePassword keystoreProperties['storePassword']
             }
+
         }
     }
 
     buildTypes {
         release {
-            signingConfig hasSigningConfig ? signingConfigs.release : signingConfigs.debug
+            signingConfig signingConfigs.release
 
         }
     }
@@ -95,17 +85,9 @@ android {
     buildFeatures {
         viewBinding true
     }
-    packagingOptions {
-        resources {
-            excludes += [
-                    'META-INF/LICENSE',
-                    'META-INF/LICENSE.txt',
-                    'META-INF/NOTICE',
-                    'META-INF/NOTICE.txt'
-            ]
-        }
+    viewBinding {
+        enabled true
     }
-    buildToolsVersion '34.0.0'
 }
 
 flutter {
@@ -113,15 +95,10 @@ flutter {
 }
 
 dependencies {
-    implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
-    implementation platform("com.google.firebase:firebase-bom:34.4.0")
-    implementation 'com.google.firebase:firebase-auth'
+    implementation "org.jetbrains.kotlin:kotlin-stdlib:1.9.25"
+    implementation platform('com.google.firebase:firebase-bom')
     implementation 'com.google.android.gms:play-services-auth:20.7.0'
     implementation 'androidx.multidex:multidex:2.0.1'
 }
 
-if (file("google-services.json").exists()) {
-    apply plugin: 'com.google.gms.google-services'
-} else {
-    logger.lifecycle("[navy_encrypt] google-services.json not found in ${projectDir}, skipping Google Services plugin for this build.")
-}
+apply plugin: 'com.google.gms.google-services'

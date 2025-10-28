@@ -160,18 +160,18 @@ class IOHelper {
       }
 
       final resultDir = await ensureResultDir();
-      final sanitizedPrefix = _sanitizeFileName(prefix ?? 'file');
-      final ext = extension ?? p.extension(file.path);
-      final sanitizedExt = ext != null && ext.trim().isNotEmpty && ext.startsWith('.')
-          ? ext
-          : (ext != null && ext.trim().isNotEmpty ? '.${ext.trim()}' : '');
+    final sanitizedPrefix = _sanitizeFileName(prefix ?? 'file');
+    final ext = extension ?? p.extension(file.path);
+    final sanitizedExt = ext != null && ext.trim().isNotEmpty && ext.startsWith('.')
+        ? ext
+        : (ext != null && ext.trim().isNotEmpty ? '.${ext.trim()}' : '');
 
-      final timestamp = DateTime.now()
-          .toUtc()
-          .toIso8601String()
-          .replaceAll(':', '')
-          .replaceAll('-', '')
-          .replaceAll('.', '');
+    final timestamp = DateTime.now()
+        .toUtc()
+        .toIso8601String()
+        .replaceAll(':', '')
+        .replaceAll('-', '')
+        .replaceAll('.', '');
       final targetPath = p.join(
         resultDir.path,
         '${sanitizedPrefix ?? 'file'}_${timestamp}${sanitizedExt}',
@@ -309,21 +309,6 @@ class IOHelper {
       counter++;
     }
     return file;
-  }
-
-  static Future<void> tryDelete(File file) async {
-    if (file == null) {
-      return;
-    }
-
-    try {
-      if (await file.exists()) {
-        await file.delete();
-      }
-    } catch (error, stackTrace) {
-      debugPrint('⚠️ Failed to delete file ${file.path}: $error');
-      debugPrintStack(stackTrace: stackTrace);
-    }
   }
 
   static Future<File> _writeBytesSafely(File target, List<int> bytes) async {

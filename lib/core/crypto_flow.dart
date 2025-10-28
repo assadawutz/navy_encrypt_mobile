@@ -152,37 +152,23 @@ class CryptoFlow {
     final trimmedWatermark = watermark?.trim();
     File renamedWatermark;
 
-    try {
-      if (trimmedWatermark?.isNotEmpty == true) {
-        onMessage?.call(messages[CryptoStep.watermark]);
-        try {
-          signatureCode = await MyApi().getWatermarkSignatureCode(email, secret);
-        } catch (error, stackTrace) {
-          debugPrint('⚠️ Failed to fetch watermark signature code: $error');
-          debugPrintStack(stackTrace: stackTrace);
-        }
-        signatureCode ??= trimmedWatermark;
+    if (trimmedWatermark?.isNotEmpty == true) {
+      onMessage?.call(messages[CryptoStep.watermark]);
+      signatureCode = await MyApi().getWatermarkSignatureCode(email, secret);
+      signatureCode ??= trimmedWatermark;
 
-        File watermarkedFile;
-        try {
-          watermarkedFile = await Navec.addWatermark(
-            context: context,
-            filePath: processedFile.path,
-            message: trimmedWatermark,
-            email: email ?? '',
-            signatureCode: signatureCode,
-          );
-        } on FormatException catch (error) {
-          throw CryptoFlowException(error.message ?? 'ไม่สามารถใส่ลายน้ำได้');
-        } catch (error, stackTrace) {
-          debugPrint('❌ Failed to add watermark: $error');
-          debugPrintStack(stackTrace: stackTrace);
-          throw const CryptoFlowException('ไม่สามารถใส่ลายน้ำได้');
-        }
-
-        if (watermarkedFile == null) {
-          throw const CryptoFlowException('ไม่สามารถใส่ลายน้ำได้');
-        }
+      File watermarkedFile;
+      try {
+        watermarkedFile = await Navec.addWatermark(
+          context: context,
+          filePath: processedFile.path,
+          message: trimmedWatermark,
+          email: email ?? '',
+          signatureCode: signatureCode,
+        );
+      } on FormatException catch (error) {
+        throw CryptoFlowException(error.message ?? 'ไม่สามารถใส่ลายน้ำได้');
+      }
 
         addCleanup(watermarkedFile);
         try {
@@ -225,23 +211,17 @@ class CryptoFlow {
           throw const CryptoFlowException('ไม่สามารถเข้ารหัสไฟล์ได้');
         }
 
-        if (encryptedFile == null) {
-          throw const CryptoFlowException('ไม่สามารถเข้ารหัสไฟล์ได้');
-        }
-
-        addCleanup(encryptedFile);
-        File renamedEncrypted;
-        try {
-          renamedEncrypted = await IOHelper.renameWithTimestamp(
-            encryptedFile,
-            prefix: 'file_encrypted',
-            extension: '.${Navec.encryptedFileExtension}',
-          );
-        } on IOHelperException catch (error) {
-          throw CryptoFlowException(error.message);
-        }
-        addCleanup(renamedEncrypted);
-        removeCleanup(encryptedFile);
+      File encryptedFile;
+      try {
+        encryptedFile = await Navec.encryptFile(
+          filePath: processedFile.path,
+          password: password,
+          algo: algorithm,
+          uuid: uuid,
+        );
+      } on FormatException catch (error) {
+        throw CryptoFlowException(error.message ?? 'ไม่สามารถเข้ารหัสไฟล์ได้');
+      }
 
         processedFile = renamedEncrypted;
         didEncrypt = true;
@@ -262,36 +242,23 @@ class CryptoFlow {
         removeCleanup(renamedWatermark);
       }
 
-      removeCleanup(processedFile);
+    final summary = _buildSummaryMessage(didWatermark: didWatermark, didEncrypt: didEncrypt);
 
-      final summary = _buildSummaryMessage(didWatermark: didWatermark, didEncrypt: didEncrypt);
-
-      return CryptoFlowResult(
-        file: processedFile,
-        isEncryption: didEncrypt,
-        message: summary,
-        payload: {
-          resultKeys.filePath: processedFile.path,
-          resultKeys.fileEncryptPath: processedFile.path,
-          resultKeys.message: summary,
-          resultKeys.signatureCode: signatureCode,
-          resultKeys.userID: logId.toString(),
-          resultKeys.type: type,
-          resultKeys.uuid: uuid,
-          resultKeys.isEncryption: didEncrypt,
-        },
-      );
-    } on CryptoFlowException {
-      rethrow;
-    } on FormatException catch (error) {
-      throw CryptoFlowException(error.message ?? 'ไม่สามารถเข้ารหัสไฟล์ได้');
-    } catch (error, stackTrace) {
-      debugPrint('❌ CryptoFlow.encrypt unexpected error: $error');
-      debugPrintStack(stackTrace: stackTrace);
-      throw const CryptoFlowException('ไม่สามารถเข้ารหัสไฟล์ได้');
-    } finally {
-      await _cleanupPaths(cleanupPaths);
-    }
+    return CryptoFlowResult(
+      file: processedFile,
+      isEncryption: didEncrypt,
+      message: summary,
+      payload: {
+        resultKeys['filePath']: processedFile.path,
+        resultKeys['fileEncryptPath']: processedFile.path,
+        resultKeys['message']: summary,
+        resultKeys['signatureCode']: signatureCode,
+        resultKeys['userID']: logId.toString(),
+        resultKeys['type']: type,
+        resultKeys['uuid']: uuid,
+        resultKeys['isEncryption']: didEncrypt,
+      },
+    );
   }
 
   static Future<CryptoFlowResult> decrypt({
@@ -308,12 +275,17 @@ class CryptoFlow {
     await validateFile(source, requireEncryptedExtension: true);
 
     onMessage?.call(messages[CryptoStep.decrypt]);
-    final cleanupPaths = <String>{};
-    void addCleanup(File file) {
-      final path = file?.path;
-      if (path != null && path.isNotEmpty) {
-        cleanupPaths.add(path);
-      }
+    List decryptData;
+    try {
+      decryptData = await Navec.decryptFile(
+        context: context,
+        filePath: filePath,
+        password: password,
+      );
+    } on FormatException catch (error) {
+      throw CryptoFlowException(error.message ?? 'ไม่สามารถถอดรหัสไฟล์ได้');
+    } catch (error) {
+      throw CryptoFlowException(error.toString());
     }
 
     void removeCleanup(File file) {
@@ -418,6 +390,23 @@ class CryptoFlow {
     } finally {
       await _cleanupPaths(cleanupPaths);
     }
+
+    const message = 'ถอดรหัสสำเร็จ';
+
+    return CryptoFlowResult(
+      file: renamedFile,
+      isEncryption: false,
+      message: message,
+      payload: {
+        resultKeys['filePath']: renamedFile.path,
+        resultKeys['fileEncryptPath']: renamedFile.path,
+        resultKeys['message']: message,
+        resultKeys['userID']: logId.toString(),
+        resultKeys['type']: 'decryption',
+        resultKeys['uuid']: uuid,
+        resultKeys['isEncryption']: false,
+      },
+    );
   }
 
   static String _buildSummaryMessage({

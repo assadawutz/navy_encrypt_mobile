@@ -281,7 +281,7 @@ class FileDetails extends StatelessWidget {
         );
       }
     } else {
-      var fileType = Constants.allFileTypeList.firstWhereOrNull(
+      var fileType = Constants.imageFileTypeList.firstWhereOrNull(
         (fileType) => fileType.fileExtension == fileExtension,
       );
 

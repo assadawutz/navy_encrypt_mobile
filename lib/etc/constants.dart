@@ -149,4 +149,15 @@ class Constants {
       iconColor: Colors.blueGrey,
     ),
   ];
+
+  static const List<MyFileType> selectableFileTypeList = [
+    ...documentFileTypeList,
+    ...imageFileTypeList,
+    ...videoFileTypeList,
+    ...audioFileTypeList,
+  ];
+
+  static final List<String> selectableMimeTypeList = List<String>.unmodifiable(
+    selectableFileTypeList.map((type) => type.mimeType),
+  );
 }
