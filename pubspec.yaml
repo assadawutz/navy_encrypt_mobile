@@ -18,7 +18,7 @@ dependencies:
   # UI / Icons / Fonts
   # -----------------------
   flutter_icons: ^1.1.0       # สร้าง app icon
-  google_fonts: ^2.3.1        # เวอร์ชันที่รองรับ Dart 2.18
+  google_fonts: ^3.0.1        # อัปเดต patch ที่ยังรองรับ Dart 2.18
   line_icons: ^2.0.1
   font_awesome_flutter: ^9.1.0
 
@@ -26,40 +26,40 @@ dependencies:
   # UI Components
   # -----------------------
   modal_bottom_sheet: ^2.1.2  # ⚠️ downgraded เพราะ 3.x ต้อง Dart >=3.3
-  photo_view: ^0.12.0
+  photo_view: ^0.14.0
   page_transition: ^2.0.4
   multi_select_flutter: ^4.1.3
-  printing: ^5.9.3
+  printing: ^5.11.0
 
   # -----------------------
   # Networking / HTTP / API
   # -----------------------
-  http: ^0.13.5                # ⚠️ downgradedจาก >=0.13.6
+  http: ^0.13.6
   mime: ^1.0.2
   mime_type: ^1.0.0
   oauth2: ^2.0.1
-  googleapis: ^9.0.0           # เวอร์ชันรองรับ Dart 2.18
+  googleapis: ^9.2.0           # เวอร์ชันรองรับ Dart 2.18
 
   # -----------------------
   # Storage / File
   # -----------------------
-  path_provider: ^2.0.12       # รุ่นท้าย ๆ ที่ยังรองรับ Flutter 3.3
+  path_provider: ^2.0.15       # รุ่นท้าย ๆ ที่ยังรองรับ Flutter 3.3
   path: ^1.8.3
-  file_picker: ^5.2.5
+  file_picker: ^5.3.2
   file_selector: ^0.8.5        # Desktop API ยังรองรับช่องทางเก่า
-  open_filex: ^3.4.1
+  open_filex: ^4.3.2
   #  image_gallery_saver: ^1.7.1
   image_gallery_saver_plus: ^2.0.2
 
 
   icloud_storage: ^0.2.1
-  shared_preferences: ^2.0.15
+  shared_preferences: ^2.0.18
   flutter_secure_storage: ^5.0.2 # ⚠️ downgradedจาก 9.x
 
   # -----------------------
   # Sharing / Social
   # -----------------------
-  share_plus: ^6.3.4          # รุ่นสุดท้ายที่ไม่บังคับ Dart 3
+  share_plus: ^6.3.5          # รุ่นสุดท้ายที่ไม่บังคับ Dart 3
   receive_sharing_intent: ^1.4.5
   google_sign_in: ^5.4.2
   flutter_signin_button: ^2.0.0
@@ -71,26 +71,26 @@ dependencies:
   image: ^3.0.5
   universal_html: ^1.2.1
   provider: ^6.0.1
-  url_launcher: ^6.1.10
-  permission_handler: ^10.2.0  # ไม่บังคับ Flutter 3.7+
+  url_launcher: ^6.1.12
+  permission_handler: ^10.4.3  # ไม่บังคับ Flutter 3.7+
   is_first_run: ^1.0.0
   cupertino_icons: ^1.0.2
   flutter_breadcrumb: ^1.0.1
-  cached_network_image: ^3.1.0
+  cached_network_image: ^3.2.3
 
   # -----------------------
   # Utilities / Others
   # -----------------------
   uuid: ^3.0.7
-  encrypt: ^5.0.0
-  crypto: ^3.0.2
-  intl: ^0.17.0
+  encrypt: ^5.0.1
+  crypto: ^3.0.3
+  intl: ^0.18.1
   flutter_dotenv: ^5.0.2
   # -----------------------
   # Firebase
   # -----------------------
   #  firebase_auth: ^3.4.0
-  device_info_plus: ^6.0.0
+  device_info_plus: ^8.1.0
   image_picker: ^0.8.7+5
 
 # The following section is specific to Flutter.
