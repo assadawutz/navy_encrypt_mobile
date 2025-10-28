@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
+import 'package:path/path.dart' as p;
 
 class PlatformGuardException implements Exception {
   final String message;
@@ -51,5 +52,33 @@ class PlatformGuard {
       return 'linux';
     }
     return 'unknown';
+  }
+
+  static void ensureSafeFilePath(String path) {
+    if (path == null || path.trim().isEmpty) {
+      throw const PlatformGuardException('ไม่พบไฟล์');
+    }
+
+    final trimmed = path.trim();
+    final context = Platform.isWindows
+        ? p.Context(style: p.Style.windows)
+        : p.Context(style: p.Style.posix);
+    final normalized = context.normalize(trimmed);
+
+    if (!context.isAbsolute(normalized)) {
+      throw const PlatformGuardException('ไม่สามารถเข้าถึงไฟล์ได้');
+    }
+
+    final segments = context.split(normalized);
+    if (segments.any((segment) => segment == '..')) {
+      throw const PlatformGuardException('ไม่สามารถเข้าถึงไฟล์ได้');
+    }
+
+    if (Platform.isWindows) {
+      final hasDrive = normalized.contains(':');
+      if (!hasDrive) {
+        throw const PlatformGuardException('ไม่สามารถเข้าถึงไฟล์ได้');
+      }
+    }
   }
 }

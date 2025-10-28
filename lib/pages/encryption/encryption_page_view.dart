@@ -74,7 +74,8 @@ class _EncryptionPageView
                             ),
                           ),
                           width: 180.0,
-                          onClick: state._handleClickGoButton,
+                          onClick:
+                              state.isLoading ? null : state._handleClickGoButton,
                         )
                       ],
                     )
@@ -107,7 +108,9 @@ class _EncryptionPageView
                     multiline: true,
                     maxLength: 12,
                     controller: state._watermarkEditingController,
-                    enabled: snapshot.data && state._canWatermarkThisFileType(),
+                    enabled: snapshot.data &&
+                        state._canWatermarkThisFileType() &&
+                        !state.isLoading,
                   ),
                   if (!(snapshot.data && state._canWatermarkThisFileType()))
                     Padding(
@@ -182,11 +185,12 @@ class _EncryptionPageView
                 fontFamily: 'DBHeavent',
               ),
             ),
-            onChanged: state._handleChangeAlgorithm,
+            onChanged: state.isLoading ? null : state._handleChangeAlgorithm,
           ),
         ),
         MyFormField(
-          enabled: state._algorithm.code != Navec.notEncryptCode,
+          enabled:
+              state._algorithm.code != Navec.notEncryptCode && !state.isLoading,
           maxLength: state._algorithm.keyLengthInBytes,
           hint: 'กำหนดรหัสผ่านที่ต้องการ',
           //rightIcon: Icon(Icons.keyboard_arrow_down, color: Color(0xFFA7A7A7)),
@@ -203,7 +207,8 @@ class _EncryptionPageView
           onClickRightIcon: state._handleClickPasswordEye,
         ),
         MyFormField(
-          enabled: state._algorithm.code != Navec.notEncryptCode,
+          enabled:
+              state._algorithm.code != Navec.notEncryptCode && !state.isLoading,
           maxLength: state._algorithm.keyLengthInBytes,
           hint: 'ยืนยันรหัสผ่านที่ต้องการ',
           //rightIcon: Icon(Icons.keyboard_arrow_down, color: Color(0xFFA7A7A7)),
@@ -213,7 +218,9 @@ class _EncryptionPageView
           ],
           obscureText: !state._confirmPasswordVisible,
           rightIcon: Icon(
-            state._passwordVisible ? Icons.visibility : Icons.visibility_off,
+            state._confirmPasswordVisible
+                ? Icons.visibility
+                : Icons.visibility_off,
             color: Color(0xFFA7A7A7),
             size: 20.0,
           ),

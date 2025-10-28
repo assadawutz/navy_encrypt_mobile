@@ -9,6 +9,7 @@ class _DecryptionPageView
     return HeaderScaffold(
       showBackButton: true,
       showProgress: state.isLoading,
+      progressMessage: state.loadingMessage,
       header: EncryptDecryptHeader(
         imagePath: 'assets/images/ic_encrypt.png',
         title: 'การถอดรหัส',
@@ -66,7 +67,8 @@ class _DecryptionPageView
                       ),
                     ),
                     width: 180.0,
-                    onClick: state._handleClickGoButton,
+                    onClick:
+                        state.isLoading ? null : state._handleClickGoButton,
                   ),
                   if (state._decryptedBytes != null)
                     Padding(
@@ -87,6 +89,7 @@ class _DecryptionPageView
       hint: 'กรอกรหัสผ่าน',
       //rightIcon: Icon(Icons.keyboard_arrow_down, color: Color(0xFFA7A7A7)),
       controller: state._passwordEditingController,
+      enabled: !state.isLoading,
       /*inputFormatters: [
         LengthLimitingTextInputFormatter(16),
       ],*/

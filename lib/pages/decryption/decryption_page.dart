@@ -87,6 +87,10 @@ class _DecryptionPageController extends MyState<DecryptionPage> {
   }
 
   Future<void> _handleClickGoButton() async {
+    if (isLoading) {
+      return;
+    }
+
     final password = _passwordEditingController.text.trim();
     if (password.isEmpty) {
       _showSnackBar('ต้องกรอกรหัสผ่าน');
@@ -131,8 +135,6 @@ class _DecryptionPageController extends MyState<DecryptionPage> {
         return;
       }
 
-      isLoading = false;
-
       final arguments = Map<String, dynamic>.from(result.payload ?? {})
         ..putIfAbsent(CryptoFlow.resultKeys.filePath, () => result.file?.path)
         ..putIfAbsent(CryptoFlow.resultKeys.fileEncryptPath, () => result.file?.path)
@@ -145,17 +147,19 @@ class _DecryptionPageController extends MyState<DecryptionPage> {
         arguments: arguments,
       );
     } on CryptoFlowUnauthorizedException catch (error) {
-      isLoading = false;
       if (!mounted) {
         return;
       }
       await _showUnauthorizedDialog(error.message);
     } on CryptoFlowException catch (error) {
-      isLoading = false;
       _showSnackBar(error.message);
     } catch (error) {
-      isLoading = false;
       _showSnackBar('เกิดข้อผิดพลาด: ${error.toString()}');
+    } finally {
+      if (mounted) {
+        loadingMessage = null;
+        isLoading = false;
+      }
     }
   }
 

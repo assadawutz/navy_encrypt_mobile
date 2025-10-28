@@ -10,6 +10,7 @@ class _HomePageView extends WidgetView<HomePage, HomePageController> {
     return HeaderScaffold(
       showBackButton: false,
       showProgress: state.isLoading,
+      progressMessage: state.loadingMessage,
       header: Column(
         mainAxisSize: MainAxisSize.min,
         mainAxisAlignment: MainAxisAlignment.center,

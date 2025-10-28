@@ -19,6 +19,8 @@ import 'package:navy_encrypt/navy_encryption/navec.dart';
 import 'package:navy_encrypt/navy_encryption/watermark.dart';
 import 'package:navy_encrypt/pages/result/result_page.dart';
 import 'package:navy_encrypt/pages/settings/settings_page.dart';
+import 'package:navy_encrypt/models/loading_message.dart';
+import 'package:provider/provider.dart';
 import 'package:path/path.dart' as p;
 
 // import 'package:navy_encrypt/services/api.dart';
@@ -84,6 +86,10 @@ class _EncryptionPageController extends MyState<EncryptionPage> {
   }
 
   Future<void> _handleClickGoButton() async {
+    if (isLoading) {
+      return;
+    }
+
     final trimmedWatermark = _watermarkEditingController.text.trim();
     final trimmedPassword = _passwordEditingController.text.trim();
     final trimmedConfirm = _confirmPasswordEditingController.text.trim();
@@ -126,8 +132,7 @@ class _EncryptionPageController extends MyState<EncryptionPage> {
     FocusScope.of(context).unfocus();
 
     isLoading = true;
-
-    loadingMessage = CryptoFlow.messages[CryptoStep.copy];
+    _updateLoadingMessage(CryptoFlow.messages[CryptoStep.copy]);
 
     try {
       final result = await CryptoFlow.encrypt(
@@ -138,7 +143,7 @@ class _EncryptionPageController extends MyState<EncryptionPage> {
         watermark: trimmedWatermark,
         onMessage: (message) {
           if (message != null && mounted) {
-            loadingMessage = message;
+            _updateLoadingMessage(message);
           }
         },
       );
@@ -146,8 +151,6 @@ class _EncryptionPageController extends MyState<EncryptionPage> {
       if (!mounted) {
         return;
       }
-
-      isLoading = false;
 
       final arguments = Map<String, dynamic>.from(result.payload ?? {})
         ..putIfAbsent(CryptoFlow.resultKeys.filePath, () => result.file?.path)
@@ -161,11 +164,14 @@ class _EncryptionPageController extends MyState<EncryptionPage> {
         arguments: arguments,
       );
     } on CryptoFlowException catch (error) {
-      isLoading = false;
       _showSnackBar(error.message);
     } catch (error) {
-      isLoading = false;
       _showSnackBar('เกิดข้อผิดพลาด: ${error.toString()}');
+    } finally {
+      if (mounted) {
+        _updateLoadingMessage(null);
+        isLoading = false;
+      }
     }
   }
 
@@ -227,5 +233,17 @@ class _EncryptionPageController extends MyState<EncryptionPage> {
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
       ..showSnackBar(SnackBar(content: Text(message)));
+  }
+
+  void _updateLoadingMessage(String message) {
+    if (!mounted) {
+      return;
+    }
+    loadingMessage = message;
+    try {
+      Provider.of<LoadingMessage>(context, listen: false).setMessage(message);
+    } catch (error) {
+      debugPrint('⚠️ Unable to update loading message provider: $error');
+    }
   }
 }

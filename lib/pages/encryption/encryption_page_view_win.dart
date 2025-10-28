@@ -69,7 +69,8 @@ class _EncryptionPageViewWin
                             ),
                           ),
                           width: 180.0,
-                          onClick: state._handleClickGoButton,
+                          onClick:
+                              state.isLoading ? null : state._handleClickGoButton,
                         ),
                       ],
                     )
@@ -94,7 +95,9 @@ class _EncryptionPageViewWin
                     hint: 'ข้อความที่ต้องการใส่เป็นลายน้ำ',
                     multiline: true,
                     controller: state._watermarkEditingController,
-                    enabled: snapshot.data && state._canWatermarkThisFileType(),
+                    enabled: snapshot.data &&
+                        state._canWatermarkThisFileType() &&
+                        !state.isLoading,
                   ),
                   if (!(snapshot.data && state._canWatermarkThisFileType()))
                     Padding(
@@ -169,11 +172,12 @@ class _EncryptionPageViewWin
                 fontFamily: 'DBHeavent',
               ),
             ),
-            onChanged: state._handleChangeAlgorithm,
+            onChanged: state.isLoading ? null : state._handleChangeAlgorithm,
           ),
         ),
         MyFormField(
-          enabled: state._algorithm.code != Navec.notEncryptCode,
+          enabled:
+              state._algorithm.code != Navec.notEncryptCode && !state.isLoading,
           maxLength: state._algorithm.keyLengthInBytes,
           hint: 'กำหนดรหัสผ่านที่ต้องการ',
           //rightIcon: Icon(Icons.keyboard_arrow_down, color: Color(0xFFA7A7A7)),

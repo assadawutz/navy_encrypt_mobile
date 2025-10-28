@@ -50,6 +50,7 @@ class HomePageController extends MyState<HomePage> {
   List<Map<String, dynamic>> _menuData;
   String filePath;
   drive.DriveApi _driveApi;
+  bool _isProcessingFile = false;
 
   final _googleSignIn = GoogleSignIn.standard(
     scopes: [
@@ -86,6 +87,13 @@ class HomePageController extends MyState<HomePage> {
   }
 
   Future<void> _pickFile(BuildContext context) async {
+    if (isLoading) {
+      return;
+    }
+
+    isLoading = true;
+    loadingMessage = CryptoFlow.messages[CryptoStep.validate];
+
     try {
       if (Platform.isAndroid) {
         final granted = await PermGuard.ensurePickerAccess(
@@ -141,6 +149,11 @@ class HomePageController extends MyState<HomePage> {
     } catch (error) {
       debugPrint('❌ Error picking file: $error');
       _showSnackBar('เกิดข้อผิดพลาด: ${error.toString()}');
+    } finally {
+      if (mounted) {
+        loadingMessage = null;
+        isLoading = false;
+      }
     }
   }
 
@@ -183,6 +196,10 @@ class HomePageController extends MyState<HomePage> {
       return;
     }
 
+    if (_isProcessingFile) {
+      return;
+    }
+
     try {
       await CryptoFlow.validateFile(file);
     } on CryptoFlowException catch (error) {
@@ -197,9 +214,7 @@ class HomePageController extends MyState<HomePage> {
       return;
     }
 
-    if (!mounted) {
-      return;
-    }
+    _isProcessingFile = true;
 
     final extension = p.extension(file.path).toLowerCase();
     final routeToGo =
@@ -209,6 +224,7 @@ class HomePageController extends MyState<HomePage> {
       Duration.zero,
       () {
         if (!mounted) {
+          _isProcessingFile = false;
           return;
         }
         Navigator.of(context).popUntil((route) => route.isFirst);
@@ -216,7 +232,9 @@ class HomePageController extends MyState<HomePage> {
           context,
           routeToGo,
           arguments: file.path,
-        );
+        ).whenComplete((_) {
+          _isProcessingFile = false;
+        });
       },
     );
   }
