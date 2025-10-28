@@ -198,14 +198,14 @@ class CryptoFlow {
       isEncryption: didEncrypt,
       message: summary,
       payload: {
-        resultKeys.filePath: processedFile.path,
-        resultKeys.fileEncryptPath: processedFile.path,
-        resultKeys.message: summary,
-        resultKeys.signatureCode: signatureCode,
-        resultKeys.userID: logId.toString(),
-        resultKeys.type: type,
-        resultKeys.uuid: uuid,
-        resultKeys.isEncryption: didEncrypt,
+        resultKeys['filePath']: processedFile.path,
+        resultKeys['fileEncryptPath']: processedFile.path,
+        resultKeys['message']: summary,
+        resultKeys['signatureCode']: signatureCode,
+        resultKeys['userID']: logId.toString(),
+        resultKeys['type']: type,
+        resultKeys['uuid']: uuid,
+        resultKeys['isEncryption']: didEncrypt,
       },
     );
   }
@@ -280,13 +280,13 @@ class CryptoFlow {
       isEncryption: false,
       message: message,
       payload: {
-        resultKeys.filePath: renamedFile.path,
-        resultKeys.fileEncryptPath: renamedFile.path,
-        resultKeys.message: message,
-        resultKeys.userID: logId.toString(),
-        resultKeys.type: 'decryption',
-        resultKeys.uuid: uuid,
-        resultKeys.isEncryption: false,
+        resultKeys['filePath']: renamedFile.path,
+        resultKeys['fileEncryptPath']: renamedFile.path,
+        resultKeys['message']: message,
+        resultKeys['userID']: logId.toString(),
+        resultKeys['type']: 'decryption',
+        resultKeys['uuid']: uuid,
+        resultKeys['isEncryption']: false,
       },
     );
   }

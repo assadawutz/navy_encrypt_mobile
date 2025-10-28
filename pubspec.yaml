@@ -3,7 +3,7 @@ description: A new Flutter application.
 
 version: 4.2.0+5
 environment:
-  sdk: ">=2.7.0 <3.0.0"  # Flutter 3.3.8 ใช้ Dart 2.18.x
+  sdk: ">=2.10.0 <4.0.0"  # Flutter 3.3.8 ใช้ Dart 2.18.x
 
 dependencies:
   flutter:
@@ -43,11 +43,11 @@ dependencies:
   # -----------------------
   # Storage / File
   # -----------------------
-  path_provider: ^2.0.15       # รุ่นท้าย ๆ ที่ยังรองรับ Flutter 3.3
+  path_provider: ^2.0.11       # downgraded for Flutter 3.3 compatibility
   path: ^1.8.3
-  file_picker: ^5.3.2
-  file_selector: ^0.8.5        # Desktop API ยังรองรับช่องทางเก่า
-  open_filex: ^4.3.2
+  file_picker: ^5.2.5
+  file_selector: ^1.0.0
+  open_filex: ^4.3.2          # downgraded for Flutter 3.3 compatibility
   #  image_gallery_saver: ^1.7.1
   image_gallery_saver_plus: ^2.0.2
 
@@ -59,7 +59,7 @@ dependencies:
   # -----------------------
   # Sharing / Social
   # -----------------------
-  share_plus: ^6.3.5          # รุ่นสุดท้ายที่ไม่บังคับ Dart 3
+  share_plus: ^6.3.4          # downgraded for Flutter 3.3 compatibility
   receive_sharing_intent: ^1.4.5
   google_sign_in: ^5.4.2
   flutter_signin_button: ^2.0.0
@@ -71,8 +71,8 @@ dependencies:
   image: ^3.0.5
   universal_html: ^1.2.1
   provider: ^6.0.1
-  url_launcher: ^6.1.12
-  permission_handler: ^10.4.3  # ไม่บังคับ Flutter 3.7+
+  url_launcher: ^6.1.10
+  permission_handler: ^10.2.0  # downgraded for Flutter 3.3 compatibility
   is_first_run: ^1.0.0
   cupertino_icons: ^1.0.2
   flutter_breadcrumb: ^1.0.1
@@ -82,16 +82,16 @@ dependencies:
   # Utilities / Others
   # -----------------------
   uuid: ^3.0.7
-  encrypt: ^5.0.1
-  crypto: ^3.0.3
-  intl: ^0.18.1
+  encrypt: ^5.0.0
+  crypto: ^3.0.2
+  intl: ^0.17.0
   flutter_dotenv: ^5.0.2
   # -----------------------
   # Firebase
   # -----------------------
   #  firebase_auth: ^3.4.0
-  device_info_plus: ^8.1.0
-  image_picker: ^0.8.7+5
+  device_info_plus: ^7.0.0     # downgraded for Flutter 3.3 compatibility
+  image_picker: ^0.8.7+4       # downgraded for Flutter 3.3 compatibility
 
 # The following section is specific to Flutter.
 flutter:

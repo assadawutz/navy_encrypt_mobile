@@ -9,9 +9,9 @@ abstract class BaseAlgorithm {
   final int keyLengthInBytes;
 
   const BaseAlgorithm({
-    @required this.code,
-    @required this.text,
-    @required this.keyLengthInBytes,
+     this.code,
+     this.text,
+    this.keyLengthInBytes,
   });
 
   /*static List<EncryptionAlgorithm> get list {
@@ -51,17 +51,11 @@ class NotEncrypt extends BaseAlgorithm {
 
   @override
   Uint8List encrypt(String password, Uint8List bytes) {
-    if (bytes == null) {
-      return null;
-    }
-    return Uint8List.fromList(bytes);
+    return bytes;
   }
 
   @override
   Uint8List decrypt(String password, Uint8List bytes) {
-    if (bytes == null) {
-      return null;
-    }
-    return Uint8List.fromList(bytes);
+    return bytes;
   }
 }
