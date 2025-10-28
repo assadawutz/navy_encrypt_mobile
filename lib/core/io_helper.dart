@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 import 'dart:ui' show Rect;
 
+import 'package:flutter/foundation.dart';
 import 'package:navy_encrypt/core/perm_guard.dart';
 import 'package:navy_encrypt/core/platform_guard.dart';
 import 'package:path/path.dart' as p;
@@ -36,29 +37,37 @@ class IOHelper {
   static Future<Directory> _ensureDirectory(String folderName) async {
     await _ensureSupported();
 
-    Directory root;
-    if (Platform.isAndroid) {
-      final externalDirs = await getExternalStorageDirectories(
-        type: StorageDirectory.documents,
-      );
-      root = (externalDirs != null && externalDirs.isNotEmpty)
-          ? externalDirs.first
-          : await getApplicationDocumentsDirectory();
-    } else if (Platform.isIOS) {
-      root = await getApplicationDocumentsDirectory();
-    } else if (Platform.isMacOS) {
-      root = await getApplicationSupportDirectory();
-    } else if (Platform.isWindows) {
-      root = await (getDownloadsDirectory() ?? getApplicationDocumentsDirectory());
-    } else {
-      throw const IOHelperException('แพลตฟอร์มนี้ยังไม่รองรับ');
-    }
+    try {
+      Directory root;
+      if (Platform.isAndroid) {
+        final externalDirs = await getExternalStorageDirectories(
+          type: StorageDirectory.documents,
+        );
+        root = (externalDirs != null && externalDirs.isNotEmpty)
+            ? externalDirs.first
+            : await getApplicationDocumentsDirectory();
+      } else if (Platform.isIOS) {
+        root = await getApplicationDocumentsDirectory();
+      } else if (Platform.isMacOS) {
+        root = await getApplicationSupportDirectory();
+      } else if (Platform.isWindows) {
+        root = await (getDownloadsDirectory() ?? getApplicationDocumentsDirectory());
+      } else {
+        throw const IOHelperException('แพลตฟอร์มนี้ยังไม่รองรับ');
+      }
 
-    final directory = Directory(p.join(root.path, folderName));
-    if (!await directory.exists()) {
-      await directory.create(recursive: true);
+      final directory = Directory(p.join(root.path, folderName));
+      if (!await directory.exists()) {
+        await directory.create(recursive: true);
+      }
+      return directory;
+    } on IOHelperException {
+      rethrow;
+    } catch (error, stackTrace) {
+      debugPrint('❌ Failed to resolve directory "$folderName": $error');
+      debugPrintStack(stackTrace: stackTrace);
+      throw const IOHelperException('ไม่สามารถเข้าถึงโฟลเดอร์ปลายทางได้');
     }
-    return directory;
   }
 
   static Future<Directory> ensureWorkspaceDir() async {
@@ -89,7 +98,7 @@ class IOHelper {
         toResultDirectory ? await ensureResultDir() : await ensureWorkspaceDir();
     final file = File(p.join(targetDirectory.path, sanitizedName));
 
-    return file.writeAsBytes(bytes, flush: true);
+    return _writeBytesSafely(file, bytes);
   }
 
   static Future<File> copyToWorkspace(File source) async {
@@ -97,20 +106,37 @@ class IOHelper {
       throw const IOHelperException('ไม่พบไฟล์');
     }
 
-    if (!await source.exists()) {
-      throw const IOHelperException('ไม่พบไฟล์');
+    try {
+      try {
+        PlatformGuard.ensureSafeFilePath(source.path);
+      } on PlatformGuardException catch (error) {
+        throw IOHelperException(error.message);
+      }
+
+      if (!await source.exists()) {
+        throw const IOHelperException('ไม่พบไฟล์');
+      }
+
+      final workspace = await ensureWorkspaceDir();
+      final sanitizedName = _sanitizeFileName(p.basename(source.path)) ??
+          'file_${DateTime.now().millisecondsSinceEpoch}${p.extension(source.path)}';
+
+      File destination = File(p.join(workspace.path, sanitizedName));
+      if (await destination.exists()) {
+        destination = await _deduplicate(destination);
+      }
+
+      try {
+        final copied = await source.copy(destination.path);
+        return copied;
+      } on FileSystemException catch (error, stackTrace) {
+        debugPrint('❌ Failed to copy file to workspace: $error');
+        debugPrintStack(stackTrace: stackTrace);
+        throw const IOHelperException('ไม่สามารถคัดลอกไฟล์ไปยังพื้นที่ทำงานได้');
+      }
+    } on IOHelperException {
+      rethrow;
     }
-
-    final workspace = await ensureWorkspaceDir();
-    final sanitizedName = _sanitizeFileName(p.basename(source.path)) ??
-        'file_${DateTime.now().millisecondsSinceEpoch}${p.extension(source.path)}';
-
-    File destination = File(p.join(workspace.path, sanitizedName));
-    if (await destination.exists()) {
-      destination = await _deduplicate(destination);
-    }
-
-    return source.copy(destination.path);
   }
 
   static Future<File> renameWithTimestamp(
@@ -118,11 +144,22 @@ class IOHelper {
     String prefix,
     String extension,
   }) async {
-    if (file == null || !await file.exists()) {
+    if (file == null) {
       throw const IOHelperException('ไม่พบไฟล์');
     }
 
-    final resultDir = await ensureResultDir();
+    try {
+      try {
+        PlatformGuard.ensureSafeFilePath(file.path);
+      } on PlatformGuardException catch (error) {
+        throw IOHelperException(error.message);
+      }
+
+      if (!await file.exists()) {
+        throw const IOHelperException('ไม่พบไฟล์');
+      }
+
+      final resultDir = await ensureResultDir();
     final sanitizedPrefix = _sanitizeFileName(prefix ?? 'file');
     final ext = extension ?? p.extension(file.path);
     final sanitizedExt = ext != null && ext.trim().isNotEmpty && ext.startsWith('.')
@@ -135,17 +172,28 @@ class IOHelper {
         .replaceAll(':', '')
         .replaceAll('-', '')
         .replaceAll('.', '');
-    final targetPath = p.join(
-      resultDir.path,
-      '${sanitizedPrefix ?? 'file'}_${timestamp}${sanitizedExt}',
-    );
+      final targetPath = p.join(
+        resultDir.path,
+        '${sanitizedPrefix ?? 'file'}_${timestamp}${sanitizedExt}',
+      );
 
-    try {
-      return await file.rename(targetPath);
-    } on FileSystemException {
-      final copied = await file.copy(targetPath);
-      await file.delete();
-      return copied;
+      try {
+        return await file.rename(targetPath);
+      } on FileSystemException catch (error, stackTrace) {
+        debugPrint('⚠️ Rename failed, fallback to copy: $error');
+        debugPrintStack(stackTrace: stackTrace);
+        try {
+          final copied = await file.copy(targetPath);
+          await file.delete().catchError((_) {});
+          return copied;
+        } on FileSystemException catch (copyError, copyStackTrace) {
+          debugPrint('❌ Copy fallback failed: $copyError');
+          debugPrintStack(stackTrace: copyStackTrace);
+          throw const IOHelperException('ไม่สามารถย้ายไฟล์ไปยังปลายทางได้');
+        }
+      }
+    } on IOHelperException {
+      rethrow;
     }
   }
 
@@ -162,6 +210,12 @@ class IOHelper {
     }
 
     if (path != null && path.trim().isNotEmpty) {
+      try {
+        PlatformGuard.ensureSafeFilePath(path);
+      } on PlatformGuardException catch (error) {
+        throw IOHelperException(error.message);
+      }
+
       final original = File(path.trim());
       if (!await original.exists()) {
         throw const IOHelperException('ไม่พบไฟล์');
@@ -177,7 +231,17 @@ class IOHelper {
   static Future<void> preview(File file) async {
     await _ensureSupported();
 
-    if (file == null || !await file.exists()) {
+    if (file == null) {
+      throw const IOHelperException('ไม่พบไฟล์');
+    }
+
+    try {
+      PlatformGuard.ensureSafeFilePath(file.path);
+    } on PlatformGuardException catch (error) {
+      throw IOHelperException(error.message);
+    }
+
+    if (!await file.exists()) {
       throw const IOHelperException('ไม่พบไฟล์');
     }
 
@@ -190,7 +254,17 @@ class IOHelper {
   static Future<void> shareFile(File file) async {
     await _ensureSupported();
 
-    if (file == null || !await file.exists()) {
+    if (file == null) {
+      throw const IOHelperException('ไม่พบไฟล์');
+    }
+
+    try {
+      PlatformGuard.ensureSafeFilePath(file.path);
+    } on PlatformGuardException catch (error) {
+      throw IOHelperException(error.message);
+    }
+
+    if (!await file.exists()) {
       throw const IOHelperException('ไม่พบไฟล์');
     }
 
@@ -235,5 +309,39 @@ class IOHelper {
       counter++;
     }
     return file;
+  }
+
+  static Future<File> _writeBytesSafely(File target, List<int> bytes) async {
+    final tempPath = '${target.path}.tmp';
+    final tempFile = File(tempPath);
+
+    try {
+      if (await tempFile.exists()) {
+        await tempFile.delete();
+      }
+
+      final written = await tempFile.writeAsBytes(bytes, flush: true);
+      final actualLength = await written.length();
+      if (actualLength != bytes.length) {
+        await written.delete().catchError((_) {});
+        throw const IOHelperException('ไม่สามารถบันทึกไฟล์ได้');
+      }
+
+      try {
+        await written.rename(target.path);
+        return File(target.path);
+      } on FileSystemException {
+        final copied = await written.copy(target.path);
+        await written.delete().catchError((_) {});
+        return copied;
+      }
+    } on IOHelperException {
+      rethrow;
+    } catch (error, stackTrace) {
+      debugPrint('❌ Failed to write file ${target.path}: $error');
+      debugPrintStack(stackTrace: stackTrace);
+      await tempFile.delete().catchError((_) {});
+      throw const IOHelperException('ไม่สามารถบันทึกไฟล์ได้ (พื้นที่ไม่พอหรือสิทธิ์ไม่เพียงพอ)');
+    }
   }
 }

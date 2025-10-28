@@ -9,6 +9,7 @@ class _DecryptionPageViewWin
     return HeaderScaffold(
       showBackButton: true,
       showProgress: state.isLoading,
+      progressMessage: state.loadingMessage,
       body: SingleChildScrollView(
         child: MyContainer(
           //padding: const EdgeInsets.fromLTRB(32.0, 16.0, 32.0, 32.0),
@@ -61,7 +62,8 @@ class _DecryptionPageViewWin
                       ),
                     ),
                     width: 180.0,
-                    onClick: state._handleClickGoButton,
+                    onClick:
+                        state.isLoading ? null : state._handleClickGoButton,
                   ),
                   if (state._decryptedBytes != null)
                     Padding(
@@ -82,6 +84,7 @@ class _DecryptionPageViewWin
       hint: 'กรอกรหัสผ่าน',
       //rightIcon: Icon(Icons.keyboard_arrow_down, color: Color(0xFFA7A7A7)),
       controller: state._passwordEditingController,
+      enabled: !state.isLoading,
       /*inputFormatters: [
         LengthLimitingTextInputFormatter(16),
       ],*/

@@ -149,8 +149,14 @@ class Watermark {
 
     var bytes = await response.stream.toBytes();
     var uniqueTempDirPath = (await FileUtil.createUniqueTempDir()).path;
-    File file = new File('$uniqueTempDirPath/images.zip');
-    file.writeAsBytesSync(bytes);
+    final zipFile = File('$uniqueTempDirPath/images.zip');
+    try {
+      await zipFile.writeAsBytes(bytes, flush: true);
+    } catch (error, stackTrace) {
+      debugPrint('❌ Failed to persist converted zip: $error');
+      debugPrintStack(stackTrace: stackTrace);
+      throw FormatException('ไม่สามารถบันทึกผลการแปลงไฟล์ได้');
+    }
 
     FileUtil.unzip(dirPath: uniqueTempDirPath, filename: 'images.zip');
     return await _addWatermarkDir(
