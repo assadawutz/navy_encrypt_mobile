@@ -6,7 +6,7 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 ### Added
-- Added GitHub Actions workflow that builds and publishes unsigned iOS IPA and Android APK artifacts for every successful run.
+- Added GitHub Actions workflow that builds and publishes unsigned iOS IPA and Android APK artifacts for every successful run, with safeguards for rerun release uploads.
 ### Fixed
 - Downgraded desktop/mobile plugins (`share_plus`, `permission_handler`, `device_info_plus`, `image_picker`, `path_provider`, `file_selector`, `open_filex`, `image_gallery_saver_plus`, `uuid`) to the last versions compatible with the locked Flutter 3.3.8 toolchain so Android, iOS, and Windows builds run again.
 
