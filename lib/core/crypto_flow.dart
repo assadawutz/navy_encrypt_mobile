@@ -126,13 +126,18 @@ class CryptoFlow {
       signatureCode = await MyApi().getWatermarkSignatureCode(email, secret);
       signatureCode ??= trimmedWatermark;
 
-      final watermarkedFile = await Navec.addWatermark(
-        context: context,
-        filePath: processedFile.path,
-        message: trimmedWatermark,
-        email: email ?? '',
-        signatureCode: signatureCode,
-      );
+      File watermarkedFile;
+      try {
+        watermarkedFile = await Navec.addWatermark(
+          context: context,
+          filePath: processedFile.path,
+          message: trimmedWatermark,
+          email: email ?? '',
+          signatureCode: signatureCode,
+        );
+      } on FormatException catch (error) {
+        throw CryptoFlowException(error.message ?? 'ไม่สามารถใส่ลายน้ำได้');
+      }
 
       if (watermarkedFile == null) {
         throw const CryptoFlowException('ไม่สามารถใส่ลายน้ำได้');
@@ -154,12 +159,17 @@ class CryptoFlow {
         throw const CryptoFlowException('ไม่สามารถเข้ารหัสได้');
       }
 
-      final encryptedFile = await Navec.encryptFile(
-        filePath: processedFile.path,
-        password: password,
-        algo: algorithm,
-        uuid: uuid,
-      );
+      File encryptedFile;
+      try {
+        encryptedFile = await Navec.encryptFile(
+          filePath: processedFile.path,
+          password: password,
+          algo: algorithm,
+          uuid: uuid,
+        );
+      } on FormatException catch (error) {
+        throw CryptoFlowException(error.message ?? 'ไม่สามารถเข้ารหัสไฟล์ได้');
+      }
 
       if (encryptedFile == null) {
         throw const CryptoFlowException('ไม่สามารถเข้ารหัสไฟล์ได้');
@@ -221,6 +231,8 @@ class CryptoFlow {
         filePath: filePath,
         password: password,
       );
+    } on FormatException catch (error) {
+      throw CryptoFlowException(error.message ?? 'ไม่สามารถถอดรหัสไฟล์ได้');
     } catch (error) {
       throw CryptoFlowException(error.toString());
     }

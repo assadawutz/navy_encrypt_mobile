@@ -3,6 +3,7 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/foundation.dart';
 import 'package:navy_encrypt/etc/constants.dart';
 import 'package:navy_encrypt/etc/file_util.dart';
 import 'package:navy_encrypt/etc/utils.dart';
@@ -108,18 +109,15 @@ class Navec {
     const space = ' ';
 
     if (filePath == null || filePath.isEmpty) {
-      debugPrint('encryptFile: file path is empty');
-      return null;
+      throw FormatException('ไม่พบไฟล์');
     }
 
     if (algo == null) {
-      debugPrint('encryptFile: algorithm is required');
-      return null;
+      throw FormatException('ไม่พบวิธีการเข้ารหัส');
     }
 
     if (password == null) {
-      debugPrint('encryptFile: password is null');
-      return null;
+      throw FormatException('ต้องกรอกรหัสผ่านก่อนเข้ารหัส');
     }
 
     var sanitizedUuid = (uuid ?? '').trim();
@@ -133,20 +131,17 @@ class Navec {
     try {
       final sourceFile = File(filePath);
       if (!await sourceFile.exists()) {
-        debugPrint('encryptFile: file not found at $filePath');
-        return null;
+        throw FormatException('ไม่พบไฟล์');
       }
 
       final bytes = await sourceFile.readAsBytes();
       if (bytes == null || bytes.isEmpty) {
-        debugPrint('encryptFile: no data to encrypt');
-        return null;
+        throw FormatException('ไม่พบข้อมูลไฟล์');
       }
 
       final encryptedBytes = algo.encrypt(password, bytes);
       if (encryptedBytes == null || encryptedBytes.isEmpty) {
-        debugPrint('encryptFile: encryption produced no output');
-        return null;
+        throw FormatException('ไม่สามารถเข้ารหัสไฟล์ได้');
       }
 
       var logMap = <String, dynamic>{
@@ -195,12 +190,25 @@ class Navec {
       );
       logMap['Encrypted file path'] = outFile.path;
 
+      if (outFile == null || !await outFile.exists()) {
+        throw FormatException('ไม่สามารถบันทึกไฟล์ได้');
+      }
+
+      final outLength = await outFile.length();
+      if (outLength != encryptedBytesWithHeader.length) {
+        await outFile.delete().catchError((_) {});
+        throw FormatException('ไม่สามารถบันทึกไฟล์ได้');
+      }
+
       logWithBorder(logMap, 2);
 
       return outFile;
-    } catch (error) {
+    } on FormatException {
+      rethrow;
+    } catch (error, stackTrace) {
       debugPrint('encryptFile error: $error');
-      return null;
+      debugPrintStack(stackTrace: stackTrace);
+      throw FormatException('ไม่สามารถเข้ารหัสไฟล์ได้');
     }
   }
   // END encryptFile
@@ -320,15 +328,26 @@ class Navec {
     @required String password,
   }) async {
     if (filePath == null || filePath.isEmpty) {
-      debugPrint('decryptFile: file path is empty');
-      return [null, null];
+      throw FormatException('ไม่พบไฟล์');
     }
 
     try {
-      var fileBytes = await File(filePath).readAsBytes();
+      final file = File(filePath);
+      if (!await file.exists()) {
+        throw FormatException('ไม่พบไฟล์');
+      }
+
+      final fileBytes = await file.readAsBytes();
       if (fileBytes == null || fileBytes.isEmpty) {
-        debugPrint('decryptFile: no data found');
-        return [null, null];
+        throw FormatException('ไม่พบข้อมูลไฟล์');
+      }
+
+      final headerLength = Navec.headerFileSignature.length +
+          Navec.headerFileExtensionFieldLength +
+          Navec.headerAlgorithmFieldLength;
+
+      if (fileBytes.length < headerLength) {
+        throw FormatException('ไฟล์ไม่ถูกต้องหรือไฟล์เสียหาย');
       }
 
       var extensionFieldBeginIndex = Navec.headerFileSignature.length;
@@ -343,9 +362,13 @@ class Navec {
         'Password': password,
       };
 
-      var fileSignature =
+      final fileSignature =
           utf8.decode(fileBytes.sublist(0, Navec.headerFileSignature.length));
       logMap['File signature'] = fileSignature;
+
+      if (fileSignature != Navec.headerFileSignature) {
+        throw FormatException('ไฟล์ไม่ถูกเข้ารหัสด้วยระบบนี้');
+      }
 
       var fileExtension = utf8
           .decode(fileBytes.sublist(
@@ -365,59 +388,66 @@ class Navec {
 
       var contentEndIndex = fileBytes.length;
       String uuid;
-      try {
-        uuid = utf8
-            .decode(fileBytes.sublist(
-              (fileBytes.length - headerUUIDFieldLength),
-            ))
-            .trim();
-
-        logMap['UUID'] = uuid;
-        contentEndIndex = contentEndIndex - headerUUIDFieldLength;
-      } catch (err) {}
+      if (fileBytes.length > headerUUIDFieldLength) {
+        try {
+          uuid = utf8
+              .decode(fileBytes.sublist(
+                fileBytes.length - headerUUIDFieldLength,
+              ))
+              .trim();
+          if (uuid?.isNotEmpty == true) {
+            logMap['UUID'] = uuid;
+            contentEndIndex = contentEndIndex - headerUUIDFieldLength;
+          }
+        } catch (_) {}
+      }
 
       logWithBorder(logMap, 2);
 
-      var algo = Navec.algorithms.firstWhere(
-        (algo) => algo.code == algoCode,
+      final algo = Navec.algorithms.firstWhere(
+        (candidate) => candidate.code == algoCode,
         orElse: () => null,
       );
 
-      File outFile;
       if (algo == null) {
-        showOkDialog(
-          context,
-          'ผิดพลาด',
-          textContent: 'ไฟล์ถูกเข้ารหัสด้วย Algorithm ที่แอปนี้ไม่รองรับ',
-        );
-      } else {
-        var decryptedBytes = algo.decrypt(
-            password, fileBytes.sublist(contentBeginIndex, contentEndIndex));
+        throw FormatException('ไฟล์ถูกเข้ารหัสด้วย Algorithm ที่แอปไม่รองรับ');
+      }
 
-        if (decryptedBytes == null) {
-          showOkDialog(
-            context,
-            'ผิดพลาด',
-            textContent: 'รหัสผ่านไม่ถูกต้อง หรือเกิดข้อผิดพลาดในการถอดรหัส',
-          );
-        } else {
-          var outFilename =
-              '${p.basenameWithoutExtension(filePath)}.$fileExtension';
-          logMap['Decrypted file name'] = outFilename;
+      final encryptedContent = fileBytes.sublist(contentBeginIndex, contentEndIndex);
+      final decryptedBytes = algo.decrypt(password, encryptedContent);
 
-          outFile = await FileUtil.createFileFromBytes(
-            outFilename,
-            Uint8List.fromList(decryptedBytes),
-          );
-          logMap['Decrypted file path'] = outFile.path;
-        }
+      if (decryptedBytes == null || decryptedBytes.isEmpty) {
+        throw FormatException('รหัสผ่านไม่ถูกต้อง หรือไฟล์เสียหาย');
+      }
+
+      var outFilename =
+          '${p.basenameWithoutExtension(filePath)}.$fileExtension';
+      logMap['Decrypted file name'] = outFilename;
+
+      final outFile = await FileUtil.createFileFromBytes(
+        outFilename,
+        Uint8List.fromList(decryptedBytes),
+      );
+      logMap['Decrypted file path'] = outFile.path;
+
+      if (outFile == null || !await outFile.exists()) {
+        throw FormatException('ไม่สามารถสร้างไฟล์ผลลัพธ์ได้');
+      }
+
+      final outLength = await outFile.length();
+      if (outLength != decryptedBytes.length) {
+        await outFile.delete().catchError((_) {});
+        throw FormatException('ไม่สามารถบันทึกไฟล์ได้');
       }
 
       logWithBorder(logMap, 2);
       return [outFile, uuid];
-    } catch (error) {
+    } on FormatException {
+      rethrow;
+    } catch (error, stackTrace) {
       debugPrint('decryptFile error: $error');
-      return [null, null];
+      debugPrintStack(stackTrace: stackTrace);
+      throw FormatException('ไม่สามารถถอดรหัสไฟล์ได้');
     }
   }
   // END decryptFile
@@ -485,25 +515,7 @@ class Navec {
         '${baseName}_watermarked_${timestamp}${extensionSuffix}';
     final targetPath = p.join(p.dirname(outFile.path), newFileName);
 
-    try {
-      if (await outFile.exists()) {
-        return await outFile.rename(targetPath);
-      }
-    } catch (error) {
-      debugPrint('addWatermark rename error: $error');
-    }
-
-    try {
-      final copiedFile = await outFile.copy(targetPath);
-      if (await outFile.exists() && outFile.path != copiedFile.path) {
-        await outFile.delete().catchError((_) {});
-      }
-      return copiedFile;
-    } catch (error) {
-      debugPrint('addWatermark copy error: $error');
-    }
-
-    return outFile;
+    return _persistWatermarkResult(outFile, targetPath);
   }
 
   static bool checkUniqueAlgoCode() {
@@ -518,5 +530,38 @@ class Navec {
       }
     });
     return isUnique;
+  }
+
+  static Future<File> _persistWatermarkResult(File file, String targetPath) async {
+    if (file == null) {
+      throw FormatException('ไม่สามารถใส่ลายน้ำได้');
+    }
+
+    final targetFile = File(targetPath);
+    final backupFile = File('$targetPath.bak');
+
+    try {
+      if (await targetFile.exists()) {
+        await targetFile.copy(backupFile.path);
+      }
+
+      try {
+        await file.rename(targetPath);
+        return targetFile;
+      } on FileSystemException {
+        final copied = await file.copy(targetPath);
+        await file.delete().catchError((_) {});
+        return copied;
+      }
+    } catch (error, stackTrace) {
+      debugPrint('❌ Persist watermark result failed: $error');
+      debugPrintStack(stackTrace: stackTrace);
+      if (await backupFile.exists()) {
+        await backupFile.rename(targetPath).catchError((_) {});
+      }
+      throw FormatException('ไม่สามารถบันทึกไฟล์ผลลัพธ์ได้');
+    } finally {
+      await backupFile.delete().catchError((_) {});
+    }
   }
 }
