@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file. The format
 is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and this
 project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+### Fixed
+- Downgraded desktop/mobile plugins (`share_plus`, `permission_handler`, `device_info_plus`, `image_picker`, `path_provider`, `file_selector`, `open_filex`, `image_gallery_saver_plus`, `uuid`) to the last versions compatible with the locked Flutter 3.3.8 toolchain so Android, iOS, and Windows builds run again.
+
 ## [4.2.0] - 2024-05-28
 ### Added
 - `.fvmrc`, platform signing templates, and environment scaffolding to lock the Flutter 3.3.8 toolchain across contributors.
