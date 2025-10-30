@@ -39,6 +39,19 @@ class CryptoFlowResult {
   });
 }
 
+class _CryptoFlowResultKeys {
+  final String filePath = 'filePath';
+  final String fileEncryptPath = 'fileEncryptPath';
+  final String message = 'message';
+  final String signatureCode = 'signatureCode';
+  final String userID = 'userID';
+  final String type = 'type';
+  final String uuid = 'uuid';
+  final String isEncryption = 'isEncryption';
+
+  const _CryptoFlowResultKeys();
+}
+
 class CryptoFlow {
   static const int maxFileSizeInBytes = 20 * 1024 * 1024;
 
@@ -50,16 +63,7 @@ class CryptoFlow {
     CryptoStep.decrypt: 'กำลังถอดรหัส',
   };
 
-  static const Map<String, String> resultKeys = {
-    'filePath': 'filePath',
-    'fileEncryptPath': 'fileEncryptPath',
-    'message': 'message',
-    'signatureCode': 'signatureCode',
-    'userID': 'userID',
-    'type': 'type',
-    'uuid': 'uuid',
-    'isEncryption': 'isEncryption',
-  };
+  static const _CryptoFlowResultKeys resultKeys = _CryptoFlowResultKeys();
 
   const CryptoFlow._();
 
