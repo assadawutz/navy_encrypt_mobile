@@ -1,0 +1,348 @@
+
+# CODEx BRIEF — navy_encrypt (Flutter) — Full Flow, Pages, UX, and Patch Tasks
+# Audience: Code assistant (Codex) that will ONLY modify existing code. No new screens or packages unless instructed in fallback.
+# Locale: Asia/Bangkok. macOS Intel dev host.
+
+======================================================================
+I. TL;DR OBJECTIVE
+======================================================================
+Make the existing "navy_encrypt_mobile" app fully usable on iOS, Android, and Windows by fixing flow glue code, platform guards, picker logic, watermark and encrypt/decrypt calls, preview/save/share outputs, and error handling. 
+Modify ONLY inside existing files and methods listed below. Do not add new pages or restructure files. Preserve public APIs. Keep changes minimal and safe.
+
+Matrix: Flutter/Dart 3.3.8 • Xcode 14.x/15.x Target iOS 12+ • JDK 17 • AGP 7.x • Gradle 7.6.3 • CocoaPods ~> 1.14
+
+Guardrails:
+- Patch-in-place only. No new routes, no new third-party deps, no sweeping refactors.
+- Keep UI intact. Wire existing buttons to correct flows.
+- Add platform guards and error handling using existing utility files where defined.
+- Respect maximum file size 20MB and extension whitelist.
+- Accept both .enc and normal files. .enc -> Decrypt flow, others -> Encrypt flow.
+- Windows UI must use existing *win views if present. Otherwise reuse same UI with platform checks.
+
+Deliverables by you (Codex):
+1) Code edits limited to permitted files/methods with unified diffs.
+2) Build runs on all targets with existing toolchains.
+3) Test plan passes as listed.
+
+======================================================================
+II. ARCHITECTURE & FLOW OVERVIEW
+======================================================================
+Top-level flow as implemented and required:
+
+[Home Menu] (6 original buttons unchanged)
+→ File Picker / Camera / Gallery / Cloud
+→ Validate: size ≤ 20MB, allowed extensions, platform guard, error guard
+→ Branch:
+   if selected file has extension ".enc" → [Decrypt Page]
+   else                                → [Encrypt Page]
+
+[Encrypt Page]
+→ Validate inputs
+→ Optional watermark (existing watermark util)
+→ Encryption using existing navy_encryption API (local or API if toggle exists)
+→ Rename output if required
+→ → [Result Page]
+
+[Decrypt Page]
+→ Validate inputs
+→ Decryption using existing navy_encryption API
+→ Rename output if required
+→ → [Result Page]
+
+[Result Page]
+→ Preview where supported
+→ Save to user location
+→ Share (iOS/Android/Windows) using existing share/picker utilities
+
+Key folders and expected roles (do not create new files):
+lib/
+├── main.dart
+├── app_init/
+│   ├── splash_page.dart
+│   └── app_initializer.dart
+├── core/
+│   ├── file_util.dart          # size/ext checks, temp dirs, save helpers
+│   ├── picker_util.dart        # pickers: file/camera/gallery/cloud + path fix
+│   └── platform_guard.dart     # isMobile/isDesktop/isIOS/isAndroid/isWindows
+├── navy_encryption/
+│   ├── navec.dart              # encrypt/decrypt APIs (local or service)
+│   └── watermark.dart          # watermark util
+├── pages/
+│   ├── home/
+│   │   ├── home_page.dart
+│   │   └── home_page_controller.dart
+│   ├── encrypt/
+│   │   ├── encrypt_page.dart
+│   │   └── encrypt_controller.dart
+│   ├── decrypt/
+│   │   ├── decrypt_page.dart
+│   │   └── decrypt_controller.dart
+│   └── result/
+│       ├── result_page.dart
+│       └── result_controller.dart
+
+State and data movement:
+- File path(s) and metadata flow from picker → encrypt/decrypt controllers → result controller.
+- Use existing models or simple DTOs if already present. Otherwise pass minimal args via Navigator parameters without adding new types.
+- Platform guards wrap picker and share operations.
+
+======================================================================
+III. UX/UI DETAILS PER PAGE
+======================================================================
+A) Splash / AppInitializer
+- Ensure initialization completes without blocking UI.
+- On ready, navigate to Home. No new assets or animations needed.
+
+B) Home Page
+- Six existing buttons remain. Wire to: Local File Picker, Camera, Gallery, Cloud, and any originals.
+- After picking, immediately validate with core/file_util.dart: size ≤ 20MB; extension allowed.
+- Decision:
+   - If filename endsWith(".enc") → push DecryptPage with the selected file.
+   - Else → push EncryptPage with the selected file.
+- If user cancels, remain on Home with no error.
+
+C) Encrypt Page
+- Show selected file name and size.
+- Watermark toggle if UI exists; if not, apply default watermark per existing watermark.dart behavior only when required by settings or constant flags.
+- Call navy_encryption/navec.dart encrypt() with correct parameters.
+- On success, navigate to ResultPage with output path and mime.
+- On failure, show non-blocking error using existing snackbar/toast pattern and allow retry.
+
+D) Decrypt Page
+- Show selected .enc file name and size.
+- Obtain password from existing UI widget or auth method. Do not add new fields beyond what exists.
+- Call navy_encryption/navec.dart decrypt().
+- On success, navigate to ResultPage.
+- On failure, show error and allow retry.
+
+E) Result Page
+- Preview the resulting file where supported by platform and file type.
+- Provide Save and Share actions. Use core/picker_util.dart or platform channels already in repo. 
+- Ensure Windows share/save paths use appropriate APIs or fallbacks.
+
+======================================================================
+IV. VALIDATION, GUARDS, AND LIMITS
+======================================================================
+- Size limit: 20MB. Enforced in core/file_util.dart before navigating away from Home.
+- Allowed extensions example: ["png","jpg","jpeg","pdf","txt","docx","xlsx","enc"]. Read the actual list if defined in file_util.dart and reuse. Do not hardcode if const already exists.
+- Platform guard: use core/platform_guard.dart helpers. Stop unsupported actions and show message.
+- When in doubt on Windows, disable unsupported camera/gallery gracefully.
+
+======================================================================
+V. FILES AND METHODS YOU MAY EDIT
+======================================================================
+Only modify INSIDE the following methods or small helper additions in the same files:
+- lib/app_init/app_initializer.dart: run() or init() that completes boot and routes to Home.
+- lib/pages/home/home_page.dart and home_page_controller.dart: button handlers and navigate-after-pick logic.
+- lib/core/picker_util.dart: implement pickFile/pickImageFromCamera/pickFromGallery/pickFromCloud path normalization and return types; add Windows guards.
+- lib/core/file_util.dart: add size/ext checks and safe temp output path helpers; never change public names already used by pages.
+- lib/core/platform_guard.dart: readonly helpers; if missing a helper, add small helper consistent with style.
+- lib/navy_encryption/navec.dart: wire encrypt(inputPath,password,watermark)->outputPath and decrypt(.enc,password)->outputPath using existing crypto or API call pattern.
+- lib/navy_encryption/watermark.dart: ensure watermark(inputPath)->tmpPath returns a valid file when toggled.
+- lib/pages/encrypt/*: controller runEncrypt() calling watermark then encrypt; page wiring buttons to runEncrypt().
+- lib/pages/decrypt/*: controller runDecrypt(); page wiring buttons to runDecrypt().
+- lib/pages/result/*: controller for preview/save/share; page wiring to buttons.
+
+Do not touch other files.
+
+======================================================================
+VI. PATCH TASKS (DO THESE IN ORDER)
+======================================================================
+Task 1 — Picker → Validation → Route
+- Home button handlers must await picker.
+- Validate with file_util: size and extension.
+- Branch .enc vs normal to correct page.
+- Add try/catch and show UI message on failure.
+
+Task 2 — Watermark before Encrypt
+- If watermark enabled per existing logic, run watermark(input) → wmPath; else use inputPath.
+- Call navec.encrypt(sourcePath,password,options) → outputPath.
+- Set proper filename extension for encrypted output if needed, e.g., .enc.
+
+Task 3 — Decrypt
+- Collect password from existing UI widget or method.
+- Call navec.decrypt(encPath,password) → outputPath with restored extension if available.
+- Handle wrong password gracefully.
+
+Task 4 — Result Actions
+- Implement preview() where supported by type.
+- Implement saveTo() using file_util.
+- Implement share() using existing share util; on Windows use fallback save-only if share is unsupported.
+
+Task 5 — Platform Guards
+- Use platform_guard to disable unsupported actions. Provide message and keep app stable.
+
+Task 6 — Error Surface
+- Use consistent snackbar/toast and non-blocking loader on long ops.
+
+======================================================================
+VII. EXAMPLE UNIFIED DIFFS (PATTERN ONLY — ADAPT TO REAL CODE)
+======================================================================
+### Example A: Home navigate-after-pick
+--- a/lib/pages/home/home_page_controller.dart
++++ b/lib/pages/home/home_page_controller.dart
+@@
+   Future<void> onPickLocal() async {
+-    // TODO: implement
++    try {
++      final path = await PickerUtil.pickFile();
++      if (path == null) return;
++      await _handlePickedPath(path);
++    } catch (e) {
++      view?.showError('เลือกไฟล์ไม่สำเร็จ');
++    }
+   }
+@@
+-  Future<void> _handlePickedPath(String path) async {}
++  Future<void> _handlePickedPath(String path) async {
++    if (!await FileUtil.isAllowedSize(path, maxMB: 20)) {
++      view?.showError('ไฟล์เกิน 20MB');
++      return;
++    }
++    if (!FileUtil.isAllowedExtension(path)) {
++      view?.showError('ชนิดไฟล์ไม่รองรับ');
++      return;
++    }
++    if (path.toLowerCase().endsWith('.enc')) {
++      await navigator.push(DecryptPage.route(path));
++    } else {
++      await navigator.push(EncryptPage.route(path));
++    }
++  }
+
+### Example B: Encrypt controller
+--- a/lib/pages/encrypt/encrypt_controller.dart
++++ b/lib/pages/encrypt/encrypt_controller.dart
+@@
+   Future<void> runEncrypt() async {
+-    // TODO
++    isLoading = true; notify();
++    try {
++      final src = state.inputPath;
++      final withWm = await WatermarkUtil.maybeApply(src);
++      final out = await NaVec.encrypt(withWm, state.password);
++      await navigator.pushReplacement(ResultPage.route(out));
++    } catch (e) {
++      view?.showError('เข้ารหัสล้มเหลว');
++    } finally {
++      isLoading = false; notify();
++    }
+   }
+
+### Example C: Decrypt controller
+--- a/lib/pages/decrypt/decrypt_controller.dart
++++ b/lib/pages/decrypt/decrypt_controller.dart
+@@
+   Future<void> runDecrypt() async {
+-    // TODO
++    isLoading = true; notify();
++    try {
++      final out = await NaVec.decrypt(state.inputEncPath, state.password);
++      await navigator.pushReplacement(ResultPage.route(out));
++    } catch (e) {
++      view?.showError('ถอดรหัสล้มเหลว');
++    } finally {
++      isLoading = false; notify();
++    }
+   }
+
+### Example D: FileUtil checks
+--- a/lib/core/file_util.dart
++++ b/lib/core/file_util.dart
+@@
+-  // stubs
++  static Future<bool> isAllowedSize(String path, {int maxMB = 20}) async {
++    final f = File(path);
++    if (!await f.exists()) return false;
++    final bytes = await f.length();
++    return bytes <= maxMB * 1024 * 1024;
++  }
++  static bool isAllowedExtension(String path) {
++    final ext = path.split('.').last.toLowerCase();
++    const allowed = kAllowedExtensions; // reuse existing const if defined
++    return allowed.contains(ext);
++  }
+
+======================================================================
+VIII. ACCEPTANCE TESTS
+======================================================================
+Manual checks you must pass:
+1) Pick a normal PNG < 20MB → Encrypt → Result → Preview visible on mobile → Save works → Share works on iOS/Android.
+2) Pick .enc file → Decrypt → Result → Save → Open file works.
+3) Oversize file → Block on Home with message. No crash.
+4) Unsupported ext → Block with message. No crash.
+5) Windows: camera/gallery gracefully disabled or guarded; local file encrypt/decrypt works; save works.
+6) Back navigation returns to Home without orphan state.
+7) Error during encrypt/decrypt shows message and allows retry.
+
+======================================================================
+IX. BUILD COMMANDS AND RUNTIME GUARDS
+======================================================================
+# For local builds, use these exact commands. Do not change project structure.
+
+# DIR: project-root  # WHY: ตรวจสอบและติดตั้ง dependency พื้นฐาน
+zsh -lc 'fvm flutter doctor -v || flutter doctor -v'
+
+# DIR: project-root  # WHY: ดึง dependency flutter
+zsh -lc 'fvm flutter pub get || flutter pub get'
+
+# DIR: project-root  # WHY: Android debug run
+zsh -lc 'fvm flutter build apk --debug || flutter build apk --debug'
+
+# DIR: project-root  # WHY: iOS debug run (no codesign)
+zsh -lc 'fvm flutter build ios --debug --no-codesign || flutter build ios --debug --no-codesign'
+
+# DIR: project-root  # WHY: Windows build
+zsh -lc 'fvm flutter build windows --debug || flutter build windows --debug'
+
+Notes:
+- Use Flutter 3.3.8 via FVM when present. Fallback to system flutter.
+- Do not modify Podfile or Gradle unless compile errors require minimal pinning consistent with matrix.
+
+======================================================================
+X. FALLBACK STRATEGIES (IF PRIMARY PATH FAILS)
+======================================================================
+Plan B — Minimal internal helpers only:
+- If any helper like isAllowedExtension is missing, add it inline in file_util.dart using existing style and constants.
+
+Plan C — Platform channel guards:
+- If share is unsupported on Windows, hide or disable button with tooltip. Keep save working.
+
+Plan D — Encryption API toggle:
+- If both local and remote encryption exist, prefer local. If API call is broken, short-circuit to local with same interface.
+
+All fallbacks must remain within permitted files. No new packages without explicit instruction.
+
+======================================================================
+XI. REPORT BACK FORMAT
+======================================================================
+Return unified diffs per file edited. Include a summary of what changed and why. Confirm that all acceptance tests pass on iOS, Android, Windows in debug mode.
+
+
+======================================================================
+XII. POST-CHECK BY CODEX (Before Submit)
+======================================================================
+Codex must perform these checks before submitting the patch set:
+
+1. Run `flutter analyze` — no errors or warnings allowed.
+2. Run `flutter test` (if tests exist) — all tests must pass.
+3. Debug run on iOS / Android / Windows — app launches and flow works with no crash.
+4. Verify that all pages in Section II Flow are reachable and functional.
+5. Confirm no "Unhandled Exception" or "MissingPluginException" appear in logs.
+6. Verify that ResultPage preview/save/share behave as expected for each platform.
+7. All snackbar/error messages display correctly without halting app.
+
+======================================================================
+XIII. SUCCESS CRITERIA (Final Confirmation Checklist)
+======================================================================
+Category | Condition to Pass
+---------|------------------
+**Cross-Platform** | App runs on iOS, Android, and Windows without any config modification.
+**UI Flow** | Every button executes the flow path defined in Section II correctly.
+**Error Handling** | No crash, even on invalid input, oversize files, or wrong password.
+**Output Files** | Encrypted and decrypted files open correctly on all platforms.
+**Windows Guard** | Camera/Gallery/Share disabled with proper tooltip; save still works.
+**Analyzer & Build** | `flutter analyze` clean; all `flutter build` commands succeed.
+**Codex Report** | Codex returns unified diffs, test log, and success checklist confirming all above.
+
+Once all conditions pass, the project is considered complete and production-ready.
